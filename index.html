@@ -360,7 +360,8 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
      DUP_ADD    : 같은 단어인데 중복으로 표시가 안 될 때   예) [[4, 1031]]
      DUP_REMOVE : 다른 단어인데 중복으로 잘못 표시될 때   예) [[54, 1153]]
      여러 개는 쉼표로 이어 쓰기: [[4, 1031], [36, 1112]] */
-  var APP_VERSION = "1.11.2", APP_DATE = "2026.11.02";
+  var TOUCH = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches); // 휴대폰·태블릿은 입력칸 자동 포커스 안 함(키보드 자동으로 안 올라옴)
+  var APP_VERSION = "1.11.3", APP_DATE = "2026.11.02";
   var DUP_ADD = [];
   var DUP_REMOVE = [];
   var DECKS = DATA.decks, ALLW = [], BYID = {}, DECK_OF = {}, CATS, WORDS, N, CUR;
@@ -714,7 +715,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     root.appendChild(el("div", { class: "dict-fields" }, [el("div", { class: "field" + oc }, [inp]), el("div", { class: "field" + mcl + (mLocked ? " locked" : "") }, [minp])]));
     if (!done) {
       root.appendChild(el("div", { class: "dict-actions" }, [el("button", { class: "btn ghost", type: "button", text: "모르겠어요 (정답 보기)", onclick: c.onGiveUp }), c.preNote || null, el("button", { class: "btn primary", type: "button", text: "채점", onclick: c.onSubmit })]));
-      setTimeout(function () { var f = (st.val && !mLocked) ? minp : inp; try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }, 30);
+      if (!TOUCH) setTimeout(function () { var f = (st.val && !mLocked) ? minp : inp; try { f.focus({ preventScroll: true }); } catch (e) { f.focus(); } }, 30);
     } else {
       root.appendChild(el("div", { class: "feedback", "aria-live": "polite" }, [
         el("div", { class: "verdict " + (r.cls === "k" ? "ok" : r.cls === "u" ? "mid" : "no"), text: verdictText(r) }),
