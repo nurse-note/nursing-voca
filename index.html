@@ -263,6 +263,7 @@ main { padding-block: 16px 104px; }
 .hint-sum { text-align: left; background: var(--unsure-soft); border-radius: 12px; padding: 10px 12px; margin: 14px 0 4px; font-size: 13.5px; overflow-wrap: anywhere; }
 .hint-sum b { display: block; color: var(--unsure); margin-bottom: 4px; font-size: 14px; }
 .deck-tag { display: inline-block; margin-left: 6px; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.foot-note { margin: 6px 0 4px; text-align: left; font-size: 13px; color: var(--muted); }
 .acct { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
 .acct-t { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; overflow-wrap: anywhere; }
 .acct-st { font-size: 12.5px; color: var(--muted); }
@@ -757,6 +758,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
           el("button", { class: "btn", type: "button", text: "이 단어장 시험", onclick: function () { var e = exCfg(); e.mode = "scope"; DECKS.forEach(function (x) { e.sel[x.id] = x.id === d.id ? x.cats.map(function (_, i) { return i; }) : []; }); e.f = "all"; es = null; save(); go("exam"); } })])]));
     });
     root.appendChild(el("p", { class: "note", style: "margin-top:14px", text: "단어장을 섞거나 단어를 직접 골라 시험 보려면 아래 ‘시험’ 탭을 이용하세요." }));
+    root.appendChild(el("p", { class: "foot-note", text: "오류나 잘못된 내용은 배포자에게 알려 주세요." }));
   };
 
   /* ================= 6. EXAM ================= */
