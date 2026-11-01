@@ -118,20 +118,35 @@ function mergeRemote(remote) {
   }
   return changed;
 }
+// 시험 기록: 기록 id 기준으로 합치고, 한쪽에서 삭제한 기록은 양쪽 모두 삭제로 맞춥니다.
+function mergeHist(rh) {
+  const S = KN().S; S.h = Array.isArray(S.h) ? S.h : []; let changed = false;
+  for (const id in rh) {
+    const r = rh[id]; if (!r || typeof r !== "object") continue;
+    const l = S.h.find((x) => x.id === id);
+    if (!l) { S.h.push(r); changed = true; }
+    else if (r.del && !l.del) { l.del = 1; changed = true; }
+  }
+  return changed;
+}
 async function flush(manual) {
   if (!user || !db) return;
   clearTimeout(timer);
   const S = KN().S; S.d = S.d || {};
-  const ids = Object.keys(S.d);
-  if (!ids.length) { if (status !== "denied") setStatus("synced"); return; }
-  const w = {}, sent = {};
+  S.hd = S.hd || {};
+  const ids = Object.keys(S.d), hids = Object.keys(S.hd);
+  if (!ids.length && !hids.length) { if (status !== "denied") setStatus("synced"); return; }
+  const w = {}, sent = {}, hh = {};
+  const H = Array.isArray(S.h) ? S.h : [];
+  hids.forEach((id) => { const r = H.find((x) => x.id === id); if (r) hh[id] = r; });
   ids.forEach((id) => { if (S.w[id]) { w[id] = S.w[id]; sent[id] = S.w[id].t || 0; } });
   setStatus("syncing");
   try {
-    await FS.setDoc(FS.doc(db, "users", user.uid), { w, updatedAt: FS.serverTimestamp() }, { merge: true });
+    await FS.setDoc(FS.doc(db, "users", user.uid), Object.assign({ updatedAt: FS.serverTimestamp() }, ids.length ? { w } : {}, hids.length ? { h: hh } : {}), { merge: true });
     ids.forEach((id) => { if (!S.w[id] || (S.w[id].t || 0) === sent[id]) delete S.d[id]; });
+    hids.forEach((id) => { delete S.hd[id]; });
     KN().save(true);
-    setStatus(Object.keys(S.d).length ? "pending" : "synced");
+    setStatus(Object.keys(S.d).length || Object.keys(S.hd).length ? "pending" : "synced");
   } catch (e) {
     setStatus(e && e.code === "permission-denied" ? "denied" : "error");
   }
@@ -160,18 +175,21 @@ async function boot() {
     if (!user) { setStatus("out"); return; }
     const S = KN().S;
     // 이 기기에서 다른 계정을 쓰던 기록이면 섞지 않고 새 계정 기록으로 바꿉니다.
-    if (S.owner && S.owner !== user.uid) { S.w = {}; S.d = {}; }
+    if (S.owner && S.owner !== user.uid) { S.w = {}; S.d = {}; S.h = []; S.hd = {}; }
     S.owner = user.uid; KN().save(true);
     setStatus("syncing");
     let first = true;
     unsub = FS.onSnapshot(FS.doc(db, "users", user.uid), (snap) => {
       const data = snap.exists() ? snap.data() : null;
       const remote = (data && data.w) || {};
+      const rh = (data && data.h) || {};
       if (first) {
+        S.h = Array.isArray(S.h) ? S.h : []; S.hd = S.hd || {};
+        S.h.forEach((r) => { if (!rh[r.id] || (r.del && !rh[r.id].del)) S.hd[r.id] = 1; });
         first = false; S.d = S.d || {};
         for (const id in S.w) { const l = S.w[id], r = remote[id]; if (!r || (l.t || 0) > (r.t || 0)) S.d[id] = 1; }
       }
-      const changed = mergeRemote(remote);
+      const changed = mergeRemote(remote) | mergeHist(rh);
       KN().save(true);
       if (changed) KN().refresh();
       flush();
