@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>간호학 단어장</title>
+<meta name="theme-color" content="#1F6FA8">
+<meta name="description" content="기본간호학1·2, PRE-CLINIC 용어 암기 앱">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="간호 단어장">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: sticky progress header on top, one focused study surface in the middle, fixed 4-tab bar at the bottom (phone-first, centered column on wide screens) */
+:root {
+  --bg: #F2F5F8;
+  --surface: #FFFFFF;
+  --surface-2: #EAF0F5;
+  --line: #D7E0E8;
+  --ink: #14304A;
+  --muted: #5A6C7D;
+  --accent: #1F6FA8;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCEBF6;
+  --known: #1B8A5A;
+  --known-soft: #DDF3E8;
+  --unsure: #B9780A;
+  --unsure-soft: #FBEFD3;
+  --unknown: #C23B35;
+  --unknown-soft: #FBE1DF;
+  --star: #D99A00;
+  --shadow: 0 1px 2px rgba(20,48,74,.06), 0 6px 18px rgba(20,48,74,.07);
+  --font-body: "Malgun Gothic", "맑은 고딕", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1620; --surface: #172230; --surface-2: #1F2D3D; --line: #2A3B4D;
+    --ink: #E5EDF5; --muted: #94A7B9; --accent: #6DB2E8; --accent-ink: #0B1722; --accent-soft: #1C3347;
+    --known: #4CC38A; --known-soft: #173A2B; --unsure: #E3AE4A; --unsure-soft: #3B2E14;
+    --unknown: #EF7D77; --unknown-soft: #411F1F; --star: #F0B93A;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1620; --surface: #172230; --surface-2: #1F2D3D; --line: #2A3B4D;
+  --ink: #E5EDF5; --muted: #94A7B9; --accent: #6DB2E8; --accent-ink: #0B1722; --accent-soft: #1C3347;
+  --known: #4CC38A; --known-soft: #173A2B; --unsure: #E3AE4A; --unsure-soft: #3B2E14;
+  --unknown: #EF7D77; --unknown-soft: #411F1F; --star: #F0B93A;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust: 100%;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); }
+.wrap { max-width: 640px; margin: 0 auto; }
+
+/* ---- header / overall progress ---- */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 640px; margin: 0 auto; }
+.top-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.brand { border: 0; background: transparent; padding: 4px 0; margin: -4px 0; font-weight: 700; font-size: 16px; letter-spacing: -.01em; text-align: left; display: inline-flex; gap: 6px; align-items: center; min-height: 32px; min-width: 0; }
+.pct { font-family: var(--font-mono); font-weight: 600; font-size: 15px; color: var(--known); font-variant-numeric: tabular-nums; }
+.pbar { display: flex; height: 10px; border-radius: 6px; background: var(--surface-2); overflow: hidden; margin: 8px 0 6px; }
+.pbar i { display: block; height: 100%; transition: width .35s ease; }
+.pbar .k { background: var(--known); } .pbar .u { background: var(--unsure); } .pbar .x { background: var(--unknown); }
+.legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.legend b { color: var(--ink); font-weight: 600; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: 0; }
+.dot.k { background: var(--known); } .dot.u { background: var(--unsure); } .dot.x { background: var(--unknown); } .dot.n { background: var(--line); }
+
+main { padding-block: 16px 104px; }
+.view[hidden] { display: none; }
+
+/* ---- shared controls ---- */
+.bar-label { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 8px; margin: 0 -2px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-size: 13px; min-height: 36px; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.chip small { opacity: .75; margin-left: 4px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 7px 14px; font-size: 13px; min-height: 36px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 12px; }
+.opts label { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px 16px; min-height: 48px; font-weight: 600; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); font-weight: 500; min-height: 40px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.meter { height: 4px; border-radius: 3px; background: var(--surface-2); overflow: hidden; margin: 8px 0 14px; }
+.meter i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .25s ease; }
+.count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.tag i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.star { border: 0; background: transparent; width: 44px; height: 44px; border-radius: 12px; display: inline-grid; place-items: center; color: var(--muted); flex: 0 0 auto; }
+.star svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.star[aria-pressed="true"] { color: var(--star); }
+.star[aria-pressed="true"] svg { fill: currentColor; }
+.empty { text-align: center; color: var(--muted); padding: 36px 12px; background: var(--surface); border: 1px dashed var(--line); border-radius: 16px; }
+.empty p { margin: 6px 0 0; font-size: 14px; }
+
+/* ---- flash card ---- */
+.scene { perspective: 1200px; margin-bottom: 14px; }
+.card { display: grid; position: relative; width: 100%; border: 0; background: transparent; padding: 0; text-align: left; transform-style: preserve-3d; transition: transform .5s cubic-bezier(.3,.7,.2,1); }
+.card[data-flipped="true"] { transform: rotateY(180deg); }
+.face { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 20px; min-height: 340px; display: flex; flex-direction: column; }
+.face.back { transform: rotateY(180deg); }
+.face .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.face .mid { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 10px; padding: 18px 0; }
+.big-abbr { font-family: var(--font-mono); font-weight: 600; font-size: clamp(36px, 13vw, 58px); line-height: 1.1; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.big-text { font-size: clamp(22px, 7vw, 30px); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; word-break: keep-all; }
+.big-origin { font-size: clamp(19px, 6vw, 25px); font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
+.hint { font-size: 12.5px; color: var(--muted); text-align: center; }
+.back .abbr-s { font-family: var(--font-mono); font-weight: 600; font-size: 18px; color: var(--accent); }
+.back .origin { font-size: 17px; font-weight: 500; margin: 10px 0 2px; overflow-wrap: anywhere; }
+.back .pron { font-size: 13px; color: var(--muted); }
+.back .mean { font-size: 24px; font-weight: 700; margin: 12px 0; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.35; }
+.tip { background: var(--unsure-soft); border-radius: 12px; padding: 11px 13px; font-size: 14px; line-height: 1.55; }
+.tip b { color: var(--unsure); font-size: 12px; letter-spacing: .04em; display: block; margin-bottom: 2px; }
+.judge { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.judge .btn { padding: 12px 6px; font-size: 15px; }
+.judge .k { background: var(--known-soft); color: var(--known); border-color: transparent; }
+.judge .u { background: var(--unsure-soft); color: var(--unsure); border-color: transparent; }
+.judge .x { background: var(--unknown-soft); color: var(--unknown); border-color: transparent; }
+.judge-hint { text-align: center; font-size: 12.5px; color: var(--muted); margin: 0 0 8px; min-height: 18px; }
+.summary { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 24px 18px; box-shadow: var(--shadow); text-align: center; }
+.summary h2 { margin: 0 0 4px; font-size: 20px; }
+.summary .score { font-family: var(--font-mono); font-size: 44px; font-weight: 600; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+.stat3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
+.stat3 div { border-radius: 12px; padding: 10px 4px; font-size: 13px; }
+.stat3 b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.stat3 .k { background: var(--known-soft); color: var(--known); } .stat3 .u { background: var(--unsure-soft); color: var(--unsure); } .stat3 .x { background: var(--unknown-soft); color: var(--unknown); }
+.actions { display: grid; gap: 8px; margin-top: 8px; }
+.wrong-list { text-align: left; margin: 14px 0 6px; display: grid; gap: 8px; }
+.wrong-list .w { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface-2); }
+.wrong-list .w .a { font-family: var(--font-mono); font-weight: 600; color: var(--unknown); }
+.wrong-list .w .m { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+
+/* ---- quiz ---- */
+.q-card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 18px; margin-bottom: 12px; }
+.q-kind { display: inline-block; font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 10px; margin-bottom: 12px; }
+.q-prompt { text-align: center; padding: 8px 0 4px; }
+.choices { display: grid; gap: 10px; margin-bottom: 12px; }
+.choice { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; text-align: left; border: 1.5px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px 14px; min-height: 58px; }
+.choice .n { font-family: var(--font-mono); font-size: 13px; width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; color: var(--muted); margin-top: 1px; }
+.choice .l1 { font-weight: 600; overflow-wrap: anywhere; word-break: keep-all; }
+.choice .l2 { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; margin-top: 1px; }
+.choice .l2.mono, .choice .l1.mono { font-family: var(--font-mono); }
+.choice.right { border-color: var(--known); background: var(--known-soft); }
+.choice.right .n { background: var(--known); color: var(--surface); }
+.choice.wrong { border-color: var(--unknown); background: var(--unknown-soft); }
+.choice.wrong .n { background: var(--unknown); color: var(--surface); }
+.choice:disabled { opacity: 1; cursor: default; }
+.choice.dim { opacity: .55; }
+.feedback { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+.feedback .verdict { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+.feedback .verdict.ok { color: var(--known); } .feedback .verdict.no { color: var(--unknown); }
+.feedback .full { font-size: 14px; margin: 4px 0 10px; overflow-wrap: anywhere; }
+.feedback .full .a { font-family: var(--font-mono); font-weight: 600; color: var(--accent); }
+
+/* ---- dictation ---- */
+.dict-card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 20px 18px; margin-bottom: 12px; }
+.dict-card .mid { text-align: center; padding: 16px 0 8px; }
+.hint-line { min-height: 24px; text-align: center; color: var(--muted); font-size: 14px; margin-top: 4px; }
+.field { display: flex; gap: 8px; margin-bottom: 8px; }
+.field input { flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 12px 14px; min-height: 52px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+.field input:disabled { background: var(--surface-2); }
+.field.ok input { border-color: var(--known); } .field.no input { border-color: var(--unknown); }
+.dict-actions { display: flex; gap: 8px; justify-content: space-between; margin-bottom: 12px; }
+.note { font-size: 13px; color: var(--muted); }
+
+/* ---- list ---- */
+.search { width: 100%; font: inherit; font-size: 16px; padding: 12px 14px; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); margin-bottom: 10px; }
+.sel { font: inherit; font-size: 14px; padding: 8px 10px; min-height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.group-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--muted); margin: 18px 2px 8px; }
+.group-h i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 8px; overflow: hidden; }
+.item-main { display: flex; align-items: center; gap: 2px; padding-right: 10px; }
+.item-btn { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(68px, 30%) 1fr auto; gap: 10px; align-items: center; text-align: left; border: 0; background: transparent; padding: 10px 4px 10px 0; min-height: 56px; }
+.item-btn .a { font-family: var(--font-mono); font-weight: 600; font-size: 15px; overflow-wrap: anywhere; color: var(--accent); }
+.item-btn .m { font-size: 14px; overflow-wrap: anywhere; word-break: keep-all; }
+.item-more { padding: 0 14px 14px 14px; border-top: 1px dashed var(--line); }
+.item-more .origin { font-weight: 500; margin: 10px 0 0; overflow-wrap: anywhere; }
+.item-more .pron { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.stat-line { font-size: 12.5px; color: var(--muted); margin: 8px 0; font-variant-numeric: tabular-nums; }
+.setst { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.setst button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; min-height: 32px; }
+.setst button[aria-pressed="true"].k { background: var(--known-soft); color: var(--known); border-color: var(--known); }
+.setst button[aria-pressed="true"].u { background: var(--unsure-soft); color: var(--unsure); border-color: var(--unsure); }
+.setst button[aria-pressed="true"].x { background: var(--unknown-soft); color: var(--unknown); border-color: var(--unknown); }
+.setst button[aria-pressed="true"].n { background: var(--surface-2); border-color: var(--muted); }
+.reset-zone { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rules { font-size: 12.5px; color: var(--muted); margin: 18px 0 0; }
+.rules summary { cursor: pointer; padding: 6px 0; }
+.rules ul { margin: 4px 0 0; padding-left: 18px; }
+.rules li { margin-bottom: 3px; }
+.warn { font-size: 12.5px; color: var(--unsure); margin-bottom: 8px; }
+
+/* ---- bottom tabs ---- */
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--surface); border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+.tabs-in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.tab { border: 0; background: transparent; border-radius: 12px; display: grid; justify-items: center; gap: 2px; padding: 7px 2px 6px; min-height: 54px; color: var(--muted); font-size: 12px; font-weight: 500; }
+.tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+
+.tabs-in { grid-template-columns: repeat(6, 1fr); gap: 2px; }
+.tab { font-size: 11px; padding: 7px 0 6px; letter-spacing: -.02em; }
+.sec-h { font-size: 17px; margin: 0 0 8px; }
+.deck { background: var(--surface); border: 1.5px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.deck.cur { border-color: var(--accent); }
+.deck .pbar { margin: 10px 0 8px; }
+.deck-name { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
+.badge { font-size: 11.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.deck-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.deck-actions .btn { padding: 10px 8px; font-size: 14px; }
+.ex-deck { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 12px 4px; margin-bottom: 10px; }
+.ex-deck .chips { padding-top: 8px; flex-wrap: wrap; overflow: visible; }
+.ex-foot { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.pk { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 6px; min-height: 48px; cursor: pointer; }
+.pk input { width: 22px; height: 22px; flex: 0 0 auto; accent-color: var(--accent); }
+.pk .a { font-family: var(--font-mono); font-weight: 600; font-size: 14px; color: var(--accent); flex: 0 0 34%; overflow-wrap: anywhere; }
+.pk .m { flex: 1; font-size: 14px; overflow-wrap: anywhere; word-break: keep-all; min-width: 0; }
+.pk .dk { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.say { border: 0; background: var(--accent-soft); color: var(--accent); width: 40px; height: 40px; border-radius: 12px; display: inline-grid; place-items: center; flex: 0 0 auto; vertical-align: middle; margin-left: 4px; }
+.say svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.say-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.say-row > span { min-width: 0; overflow-wrap: anywhere; }
+.item.playing { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent) inset; }
+.pl-set { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 12px 4px; margin: 6px 0 10px; }
+.pl-set .opts { margin-bottom: 8px; }
+.player { position: fixed; left: 0; right: 0; bottom: calc(66px + env(safe-area-inset-bottom, 0px)); z-index: 24; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -4px 14px rgba(20,48,74,.08); padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
+.player-in { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 8px; }
+.pl-now { flex: 1; min-width: 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player.on .pl-now { color: var(--ink); font-weight: 600; }
+.pl-s { min-width: 44px; min-height: 44px; padding: 6px; font-size: 15px; }
+.pl-main { min-height: 44px; padding: 8px 14px; white-space: nowrap; }
+#v-list { padding-bottom: 72px; }
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; } .pbar i, .meter i { transition: none; }
+  .card[data-flipped="true"] { transform: none; }
+  .face { backface-visibility: visible; -webkit-backface-visibility: visible; }
+  .card[data-flipped="false"] .face.back, .card[data-flipped="true"] .face.front { visibility: hidden; }
+  .face.back { transform: none; }
+}
+@media (min-width: 700px) { main { padding-top: 24px; } .face { min-height: 380px; } }
+</style>
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <div class="top-row"><button class="brand" id="brand" type="button" aria-label="단어장 목록으로"><span id="brand-t"></span><span aria-hidden="true">▾</span></button><span class="pct" id="pct">0%</span></div>
+  <div class="pbar" id="pbar" role="progressbar" aria-label="전체 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i class="k" style="width:0"></i><i class="u" style="width:0"></i><i class="x" style="width:0"></i></div>
+  <div class="legend" id="legend"></div>
+</div></div>
+
+<main class="wrap">
+  <section class="view" id="v-decks" aria-label="단어장 목록" hidden></section>
+  <section class="view" id="v-cards" aria-label="카드 학습" hidden></section>
+  <section class="view" id="v-quiz" aria-label="객관식" hidden></section>
+  <section class="view" id="v-write" aria-label="받아쓰기" hidden></section>
+  <section class="view" id="v-list" aria-label="전체 목록" hidden></section>
+  <section class="view" id="v-exam" aria-label="시험" hidden></section>
+</main>
+
+<nav class="tabs" aria-label="학습 모드"><div class="tabs-in" id="tabs">
+  <button class="tab" data-tab="decks"><svg viewBox="0 0 24 24"><path d="M5 4.5h10a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10M9 8h5"/></svg>단어장</button>
+  <button class="tab" data-tab="cards"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2.5"/><path d="M7 3.5h10M9 21h6"/></svg>카드</button>
+  <button class="tab" data-tab="quiz"><svg viewBox="0 0 24 24"><path d="M5 7l2 2 3-3.5M5 16l2 2 3-3.5M13 7.5h6M13 16.5h6"/></svg>객관식</button>
+  <button class="tab" data-tab="write"><svg viewBox="0 0 24 24"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1zM14 7l3 3"/></svg>받아쓰기</button>
+  <button class="tab" data-tab="list"><svg viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01"/></svg>목록</button>
+  <button class="tab" data-tab="exam"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 3v3h6V3M9 13l2 2 4-4.5"/></svg>시험</button>
+</div></nav>
+
+<script>
+const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short":"기본간호학1","sub":"이론&실습 공통 1~100번","cats":["활력징후·신체계측·일상생활","신체사정 기법·부위","검사·수치 (혈액·조직)","영상·전기생리 검사","폐기능·호흡 관련","심장·순환","체액·영양·대사","진단·경과기록","의료정보시스템·전산","간호전문직·인력","진료과·부서","신경계·관련질환","투약·주입·처치 관련","치료거부·상태·지시","성별·시간","호르몬·내분비","수술·처치(시술)","조직·세포"],"words":[{"id":1,"a":"ADL","o":"activities of daily living","p":"액티비티즈 오브 데일리 리빙","m":"일상생활 활동","t":"activities(활동)+daily(매일)+living(생활) → 먹기, 씻기 등 매일의 일상생활 동작","c":0},{"id":12,"a":"amt","o":"amount","p":"어마운트","m":"양","t":"amount 앞 3글자, '양'을 뜻하는 가장 흔한 약어","c":0},{"id":15,"a":"BBT","o":"basal body temperature","p":"베이설 바디 템퍼러처","m":"기초체온","t":"basal(기초의)+body(신체)+temperature(체온) → 배란주기 측정용 아침 기초체온","c":0},{"id":18,"a":"BMI","o":"body mass index","p":"바디 매스 인덱스","m":"체질량지수","t":"몸무게(mass)를 키로 나눈 '체질량지수', 이미 익숙한 다이어트 용어","c":0},{"id":19,"a":"BMR","o":"basal metabolic rate","p":"베이설 메타볼릭 레이트","m":"기초대사량","t":"basal(기초)+metabolic(대사)+rate(율) → 가만히 있어도 소모되는 최소 에너지","c":0},{"id":20,"a":"BP","o":"blood pressure","p":"블러드 프레셔","m":"혈압","t":"blood(혈액)+pressure(압력) → 이미 익숙한 '혈압' 약어","c":0},{"id":24,"a":"C","o":"centigrade, Celsius","p":"센티그레이드, 셀시어스","m":"섭씨","t":"체온계에서 흔히 보는 단위, Celsius의 첫 글자","c":0,"sp":1},{"id":76,"a":"ft","o":"foot, feet","p":"풋, 피트","m":"피트","t":"foot의 약자, 길이단위(약 30.48cm), 신장 표기 시 사용","c":0,"sp":1},{"id":90,"a":"ht","o":"height","p":"하이트","m":"신장, 키","t":"height의 h+t만 딴 것, Wt(체중)와 짝을 이루어 함께 암기","c":0},{"id":93,"a":"IBW","o":"ideal body weight","p":"아이디얼 바디 웨이트","m":"표준체중","t":"ideal(이상적인)+body weight(체중) → 신장 대비 이상적인 체중","c":0},{"id":2,"a":"A&P","o":"auscultation & percussion","p":"오스컬테이션 앤 퍼커션","m":"청진과 타진","t":"신체사정 4단계(시진-촉진-타진-청진) 중 청진(auscultation)과 타진(percussion)의 조합 ※ 원본에는 ausculation으로 오타가 있어 auscultation으로 바로잡았어요.","c":1},{"id":4,"a":"abd","o":"abdomen","p":"앱더먼","m":"복부","t":"abdomen의 앞 3글자, 발음 그대로 '앱드'로 암기","c":1},{"id":8,"a":"ad","o":"auris dextra","p":"아우리스 덱스트라","m":"오른쪽 귀","t":"눈의 OD(dexter=오른쪽)와 같은 어원, 귀는 auris(귀)로 시작","c":1},{"id":14,"a":"as","o":"auris sinistra (sinister)","p":"아우리스 시니스트라","m":"왼쪽 귀","t":"눈의 OS(sinister=왼쪽)와 같은 어원 → 귀 버전으로 확장해서 함께 암기","c":1},{"id":70,"a":"ext","o":"external","p":"익스터널","m":"외적","t":"external의 앞 3글자, int(내부)와 반대말 세트로 암기","c":1},{"id":98,"a":"int","o":"internal","p":"인터널","m":"내부, 내적","t":"internal의 앞 3글자, ext(외부)와 짝을 이루어 암기","c":1},{"id":5,"a":"ABGA","o":"arterial blood gas analysis","p":"아테리얼 블러드 가스 어낼러시스","m":"동맥혈 가스분석","t":"arterial(동맥의)+blood gas(혈액가스)+analysis(분석) → 산소포화도 등을 보는 동맥혈 검사","c":2},{"id":23,"a":"BUN","o":"Blood Urea Nitrogen","p":"블러드 유리아 나이트로젠","m":"혈중 요소","t":"Blood(혈액)+Urea(요소)+Nitrogen(질소) → 신장기능을 확인하는 혈액검사 수치","c":2},{"id":28,"a":"CBC","o":"complete blood cell count","p":"컴플리트 블러드 셀 카운트","m":"전혈구 검사","t":"complete(완전한)+blood cell(혈구)+count(계산) → 적혈구·백혈구·혈소판 전체 검사","c":2},{"id":68,"a":"ESR","o":"erythrocyte sedimentation rate","p":"에리스로사이트 세디멘테이션 레이트","m":"적혈구침강속도","t":"erythrocyte(적혈구)+sedimentation(침강)+rate(속도) → 염증 수치를 보는 검사","c":2},{"id":86,"a":"Hb, Hgb","o":"hemoglobin","p":"헤모글로빈","m":"헤모글로빈, 혈색소","t":"hemoglobin의 약자를 그대로 딴 것, 발음 그대로 암기","c":2},{"id":64,"a":"eos","o":"eosinophil","p":"이오시노필","m":"호산성의, 호산구","t":"eosinophil 앞 3글자, 알레르기 반응과 관련된 백혈구의 한 종류","c":2},{"id":60,"a":"EDTA","o":"ethylene diamine tetra acetic acid","p":"에틸렌 다이아민 테트라 아세틱 애시드","m":"에틸렌디아민 사초산","t":"혈액검사 채혈관에 넣는 항응고제 이름, 긴 화학명이라 앞글자 그대로 통암기","c":2},{"id":43,"a":"CT","o":"Computed Tomography","p":"컴퓨티드 토모그래피","m":"컴퓨터 단층촬영","t":"Computed(컴퓨터로 계산된)+Tomography(단층촬영) → 이미 익숙한 CT","c":3},{"id":58,"a":"ECG, EKG","o":"electrocardiogram","p":"일렉트로카디오그램","m":"심전도","t":"electro(전기)+cardio(심장)+gram(기록) → 심장의 전기신호 기록, 독일어식 표기가 EKG","c":3},{"id":61,"a":"EEG","o":"electroencephalogram","p":"일렉트로엔세팔로그램","m":"뇌파전도","t":"electro(전기)+encephalo(뇌)+gram(기록) → ECG의 '뇌' 버전으로 세트 암기","c":3},{"id":66,"a":"EPS","o":"electro physiological study","p":"일렉트로 피지올로지컬 스터디","m":"전기 생리학 검사","t":"electro(전기)+physiological(생리학적)+study(연구) → 심장 전기신호 정밀검사","c":3},{"id":74,"a":"FOBT","o":"fecal occult blood test","p":"피컬 오컬트 블러드 테스트","m":"대변잠혈검사","t":"fecal(대변의)+occult(숨은)+blood test(혈액검사) → 대변 속 잠혈을 확인하는 검사","c":3},{"id":21,"a":"BS","o":"breath sound","p":"브레스 사운드","m":"호흡음","t":"breath(호흡)+sound(소리) → 청진기로 듣는 호흡음","c":4},{"id":37,"a":"CPAP","o":"continuous positive airway pressure","p":"컨티뉴어스 파지티브 에어웨이 프레셔","m":"지속적 기도양압","t":"continuous(지속적인)+positive airway pressure(기도양압) → 수면무호흡증 치료기기","c":4},{"id":40,"a":"CPT","o":"chest physiotherapy","p":"체스트 피지오세러피","m":"흉부 물리요법","t":"chest(흉부)+physiotherapy(물리요법) → 가래 배출을 돕는 흉부타진법","c":4},{"id":49,"a":"DPI","o":"dry powder inhaler","p":"드라이 파우더 인헤일러","m":"건조분말 흡입기","t":"dry powder(건조 분말)+inhaler(흡입기) → MDI(정량식)와 다른 분말형 흡입기","c":4},{"id":67,"a":"ERV","o":"expiratory reserve volume","p":"익스파이러토리 리저브 볼륨","m":"호기보유용적","t":"expiratory(호기의)+reserve(예비)+volume(용적) → 평소 날숨 후 더 내쉴 수 있는 여유량","c":4},{"id":99,"a":"IRV","o":"inspiratory reserve volume","p":"인스파이러토리 리저브 볼륨","m":"흡기보유용적","t":"ERV의 반대: inspiratory(흡기의) → 평소 들숨 후 더 들이쉴 수 있는 여유량","c":4},{"id":94,"a":"IC","o":"inspiratory capacity","p":"인스파이러토리 캐패시티","m":"흡기용량","t":"inspiratory(흡기의)+capacity(용량) → 최대로 들이마실 수 있는 공기량","c":4},{"id":75,"a":"FRC","o":"functional residual capacity","p":"펑셔널 레지듀얼 캐패시티","m":"기능적 잔기량","t":"functional(기능적인)+residual(남은)+capacity(용량) → 평소 호흡 후 폐에 남아있는 공기량","c":4},{"id":72,"a":"FEV1","o":"forced expiratory volume at one second","p":"포스드 익스파이러토리 볼륨 앳 원 세컨드","m":"일초간 노력성 호기량","t":"forced expiratory volume(노력성 호기량)에 '1초'가 붙음 → 1초간 최대로 내쉬는 공기량","c":4},{"id":77,"a":"FVC","o":"forced vital capacity","p":"포스드 바이탈 캐패시티","m":"노력성 호기 폐활량","t":"forced(노력성의)+vital capacity(폐활량) → 최대한 힘껏 내쉰 폐활량","c":4},{"id":73,"a":"Fio2","o":"fraction of inspired oxygen","p":"프랙션 오브 인스파이어드 옥시전","m":"흡입 산소농도","t":"fraction(비율)+inspired oxygen(흡입된 산소) → 들이마시는 공기 중 산소 비율","c":4},{"id":69,"a":"ETCO2","o":"end tidal Co2 monitoring","p":"엔드 타이달 씨오투 모니터링","m":"호기말 이산화탄소 농도 검사","t":"end tidal(호기말)+CO2 monitoring → 날숨 끝부분의 이산화탄소 농도 측정","c":4},{"id":36,"a":"COPD","o":"chronic obstructive pulmonary disease","p":"크로닉 옵스트럭티브 펄모너리 디지즈","m":"만성폐쇄성 폐질환","t":"chronic(만성)+obstructive(폐쇄성)+pulmonary disease(폐질환) → 흡연 관련 대표 만성폐질환","c":4},{"id":31,"a":"CI","o":"cardiac index","p":"카디악 인덱스","m":"심장박출지수","t":"cardiac(심장의)+index(지수) → CO(심박출량)를 체표면적으로 보정한 지수 ※ 원본 PDF에서는 Cl(소문자 l)처럼 보이지만 cardiac index의 CI예요.","c":5},{"id":35,"a":"CO","o":"cardiac output","p":"카디악 아웃풋","m":"심장박출량","t":"cardiac(심장의)+output(출력) → 심장이 1분간 내보내는 혈액량","c":5},{"id":39,"a":"CPR","o":"cardiopulmonary resuscitation","p":"카디오펄모너리 리서시테이션","m":"심폐소생술","t":"cardio(심장)+pulmonary(폐)+resuscitation(소생) → 이미 익숙한 CPR","c":5},{"id":44,"a":"CVA","o":"Cerebro-Vascular-Accident","p":"세레브로 배스큘러 액시던트","m":"뇌혈관 손상, 뇌졸중","t":"cerebro(뇌)+vascular(혈관)+accident(사고) → 뇌혈관 사고=뇌졸중","c":5},{"id":26,"a":"Cal","o":"Calorie, calory","p":"칼로리","m":"칼로리","t":"Calorie의 앞 3글자, 에너지 단위로 익숙한 단어","c":6,"sp":1},{"id":52,"a":"DRIs","o":"dietary reference intakes","p":"다이어터리 레퍼런스 인테이크스","m":"일일섭취기준","t":"dietary(식이의)+reference intakes(참고 섭취량) → 하루 권장 영양섭취기준","c":6},{"id":53,"a":"DW","o":"dextrose in water","p":"덱스트로스 인 워터","m":"포도당액","t":"dextrose(포도당)+in water(물에) → 수액으로 놓는 포도당 용액","c":6},{"id":57,"a":"ECF","o":"extra cellular fluid","p":"엑스트라 셀룰러 플루이드","m":"세포외액","t":"extra(밖의)+cellular(세포의)+fluid(체액) → 세포 밖에 있는 체액","c":6},{"id":78,"a":"FVD","o":"fluid volume deficit","p":"플루이드 볼륨 데피시트","m":"체액부족","t":"fluid volume(체액량)+deficit(부족) → 탈수 등으로 체액이 부족한 상태","c":6},{"id":79,"a":"FVE","o":"fluid volume excess","p":"플루이드 볼륨 엑세스","m":"체액과다","t":"FVD의 반대: excess(과다) → 체액이 과다하게 축적된 상태(부종 등)","c":6},{"id":29,"a":"CBE","o":"charting by exception","p":"차팅 바이 익셉션","m":"특기사항기록","t":"charting(기록)+by exception(예외로) → 정상범위는 생략하고 특이사항만 기록","c":7},{"id":30,"a":"CC","o":"Chief Complaint","p":"치프 컴플레인트","m":"주호소","t":"Chief(주된)+Complaint(불편감) → 환자가 가장 먼저 호소하는 증상","c":7},{"id":51,"a":"DRG","o":"diagnosis-related groups","p":"다이어그노시스 릴레이티드 그룹스","m":"포괄수가제","t":"diagnosis(진단)+related groups(관련 그룹) → 진단명에 따라 정액수가로 묶어 청구하는 제도","c":7},{"id":54,"a":"Dx","o":"diagnosis","p":"다이어그노시스","m":"진단/진단명","t":"Sx(증상)-Dx(진단)-Tx(치료) 세트로 함께 암기(진단은 x로 줄이는 패턴)","c":7},{"id":91,"a":"Hx","o":"history","p":"히스토리","m":"병력","t":"PH(past history, 과거력)와 연결지어서 history의 h+x로 줄인 것을 기억","c":7},{"id":32,"a":"CIS","o":"clinical information system","p":"클리니컬 인포메이션 시스템","m":"임상정보체계","t":"clinical(임상의)+information system(정보시스템) → 병원 임상 데이터 전산망","c":8},{"id":38,"a":"CPOE","o":"computerized provider order entry","p":"컴퓨터라이즈드 프로바이더 오더 엔트리","m":"컴퓨터처방기입","t":"computerized(전산화된)+provider order entry(처방입력) → 의사가 컴퓨터로 직접 처방입력","c":8},{"id":62,"a":"EID","o":"electronic infusion device","p":"일렉트로닉 인퓨전 디바이스","m":"전기주입기구","t":"electronic(전자의)+infusion device(주입기구) → 수액 주입속도를 자동조절하는 펌프","c":8},{"id":63,"a":"EMR","o":"electronic medical record","p":"일렉트로닉 메디컬 레코드","m":"전자의무기록","t":"electronic(전자의)+medical record(의무기록) → 종이차트 대신 전자로 기록","c":8},{"id":87,"a":"HIS","o":"health care information system","p":"헬스케어 인포메이션 시스템","m":"건강관리정보체계","t":"health care(의료)+information system(정보시스템) → 병원 전체 운영 정보시스템","c":8},{"id":13,"a":"APN","o":"Advanced Practice Nurse","p":"어드밴스드 프랙티스 널스","m":"전문간호사","t":"Advanced(진전된)+Practice Nurse(임상간호사) → 한 단계 더 전문성을 갖춘 간호사","c":9},{"id":22,"a":"BSN","o":"Bachelor of Science in Nursing","p":"배철러 오브 사이언스 인 널싱","m":"간호학사 학위","t":"Bachelor(학사)+Science in Nursing(간호학) → 4년제 간호학사 학위","c":9},{"id":33,"a":"CNS","o":"clinical nurse specialist","p":"클리니컬 널스 스페셜리스트","m":"임상전문간호사","t":"clinical(임상의)+nurse specialist(전문간호사) → 같은 약자 CNS(중추신경계)와 문맥으로 구분!","c":9},{"id":50,"a":"Dr","o":"doctor","p":"닥터","m":"의사","t":"doctor의 앞 2글자, 가장 흔한 줄임말","c":9},{"id":56,"a":"EBP","o":"evidence based practice","p":"에비던스 베이스드 프랙티스","m":"근거기반실무","t":"evidence(근거)+based(기반한)+practice(실무) → 연구근거에 기반한 간호실무","c":9},{"id":95,"a":"ICN","o":"International Council of Nurses","p":"인터내셔널 카운슬 오브 널시스","m":"국제간호협의회","t":"International(국제)+Council of Nurses(간호사협의회) → KNA(한국)의 국제 버전","c":9},{"id":42,"a":"CSR","o":"Central Supply Room","p":"센트럴 서플라이 룸","m":"중앙공급실","t":"Central(중앙)+Supply Room(공급실) → 소독물품 등을 모아 공급하는 부서","c":10},{"id":55,"a":"E.N.T","o":"ear, nose and throat","p":"이어, 노즈 앤 스로트","m":"이비인후과","t":"ear(귀)+nose(코)+throat(목) → 귀·코·목을 보는 진료과","c":10},{"id":81,"a":"GI","o":"gastro-intestine","p":"가스트로 인테스틴","m":"위장계","t":"gastro(위)+intestine(장) → 위와 장을 합친 소화기계","c":10},{"id":83,"a":"GU","o":"genito-urinary","p":"제니토 유리너리","m":"비뇨생식기","t":"genito(생식기)+urinary(비뇨기) → 비뇨생식기계 진료","c":10},{"id":84,"a":"Gyn","o":"gynecology","p":"가이네콜로지","m":"부인과","t":"gynecology 앞 3글자, 여성 생식기를 다루는 진료과","c":10},{"id":34,"a":"CNS","o":"Central Nervous System","p":"센트럴 너버스 시스템","m":"중추신경계","t":"Central(중추의)+Nervous System(신경계) → 뇌와 척수, 같은 약자 CNS(전문간호사)와 구분주의!","c":11},{"id":41,"a":"CSF","o":"Cerebro Spinal Fluid","p":"세레브로 스파이널 플루이드","m":"뇌척수액","t":"Cerebro(뇌)+Spinal(척수)+Fluid(액체) → 뇌와 척수를 보호하는 액체","c":11},{"id":80,"a":"G-B syndrome","o":"Guillain-Barre syndrome","p":"길랑-바레 신드롬","m":"길랑-바레 증후군","t":"발견자 두 사람 이름(Guillain, Barré)을 딴 자가면역성 신경질환 ※ 원본 표기는 Guilain-Barre지만 바른 철자는 Guillain-Barré예요.","c":11,"alt":["Guilain-Barre syndrome"]},{"id":88,"a":"HIV","o":"human immunodeficiency virus","p":"휴먼 이뮤노데피션시 바이러스","m":"인간면역결핍 바이러스","t":"human(인간)+immunodeficiency(면역결핍)+virus(바이러스) → 에이즈를 일으키는 바이러스","c":11},{"id":3,"a":"aa","o":"ana","p":"아나","m":"각각","t":"라틴어 ana=각각(같은 양씩) → 처방전에서 여러 약을 '각각' 섞을 때 사용","c":12},{"id":7,"a":"ac","o":"ante cibum, before meal","p":"안테 시붐","m":"식전","t":"ante(이전)+cibum(식사) → pc(식후)의 반대말로 세트 암기","c":12,"sp":1},{"id":11,"a":"amp","o":"ampule","p":"앰플","m":"앰플","t":"ampule의 줄임, 밀봉된 유리용기 약병","c":12},{"id":16,"a":"bid","o":"bis in die, twice a day","p":"비스 인 디에","m":"하루 두 번","t":"bis=2번(bicycle의 bi와 연결) → 하루 2번 투여","c":12,"sp":1},{"id":17,"a":"bin","o":"bis in nocte","p":"비스 인 녹테","m":"하루 밤에 두 번","t":"bid와 비슷하지만 nocte(밤)가 붙어 '밤에' 2번이라는 뜻","c":12},{"id":25,"a":"c(c)̄","o":"com(with) / cum","p":"쿰, 콤","m":"함께, 같이","t":"라틴어 cum=with, S(s)(without, 없이)의 반대말로 세트 암기","c":12,"sp":1},{"id":27,"a":"cap","o":"capsule","p":"캡슐","m":"교갑","t":"capsule의 줄임말, 발음 그대로 '캡'","c":12},{"id":82,"a":"gtt","o":"gutta(drop)","p":"구타","m":"방울","t":"라틴어 gutta=물방울, 수액 방울수를 셀 때 사용하는 단위","c":12},{"id":89,"a":"hs","o":"hora somni, at bedtime","p":"호라 솜니","m":"취침시간","t":"hora(시간)+somni(잠) → '잠자는 시간'에 투여","c":12,"sp":1},{"id":96,"a":"IM","o":"intramuscular","p":"인트라머스큘러","m":"근육내","t":"intra(안으로)+muscular(근육의) → 근육주사, sc(피하)보다 깊게 주사","c":12},{"id":97,"a":"inf","o":"infusion","p":"인퓨전","m":"주입","t":"infusion의 줄임, 수액 등을 '주입'한다는 뜻","c":12},{"id":100,"a":"IV","o":"intravenous","p":"인트라비너스","m":"정맥내","t":"intra(안으로)+venous(정맥의) → 정맥주사, IM(근육내)과 세트로 비교암기","c":12},{"id":6,"a":"ABR","o":"absolute bed rest","p":"앱솔루트 베드 레스트","m":"절대안정","t":"absolute(절대적인)+bed rest(침상안정) → 움직임을 완전히 제한하는 안정","c":13},{"id":10,"a":"AMA","o":"against medical advice","p":"어게인스트 메디컬 어드바이스","m":"의학적 권고거부","t":"against(반하여)+medical advice(의학적 조언) → 의사 권고를 거부함","c":13},{"id":46,"a":"DAMA","o":"discharge against medical advice","p":"디스차지 어게인스트 메디컬 어드바이스","m":"자의퇴원","t":"discharge(퇴원)+AMA(의학적 권고거부) → AMA 앞에 discharge가 붙은 확장형","c":13},{"id":47,"a":"DC","o":"discontinue","p":"디스컨티뉴","m":"중단, 중지","t":"discontinue의 앞 2글자, 투약이나 처치를 '중단'한다는 뜻","c":13},{"id":48,"a":"DOA","o":"dead on arrival","p":"데드 온 어라이벌","m":"도착시 사망","t":"dead(사망한)+on arrival(도착 시) → 병원 도착 당시 이미 사망한 상태","c":13},{"id":59,"a":"EDS","o":"excessive daytime sleepiness","p":"엑세시브 데이타임 슬리피니스","m":"과도주간졸음","t":"excessive(과도한)+daytime(주간)+sleepiness(졸림) → 낮 동안 비정상적으로 졸린 증상","c":14},{"id":71,"a":"F","o":"female","p":"피메일","m":"여성","t":"female의 첫 글자, M(male, 남성)과 짝을 이룸","c":14},{"id":85,"a":"h","o":"hour","p":"아워","m":"시간","t":"hour의 첫 글자, q h(매시간)처럼 다른 약어와 자주 결합되어 사용","c":14},{"id":9,"a":"ADH","o":"antidiuretic hormone","p":"안티다이유레틱 호르몬","m":"항이뇨호르몬","t":"anti(반대)+diuretic(이뇨의)+hormone(호르몬) → 소변량을 줄이는(이뇨를 막는) 호르몬","c":15},{"id":45,"a":"D&C","o":"dilatation and curettage","p":"딜레이테이션 앤 큐레타지","m":"소파술","t":"dilatation(확장)+curettage(긁어냄) → 자궁경부를 넓히고 내막을 긁어내는 시술","c":16},{"id":92,"a":"I&D","o":"incision and drainage","p":"인시전 앤 드레이니지","m":"절개와 배액","t":"incision(절개)+drainage(배액) → 고름 등을 빼내기 위해 절개 후 배액","c":16},{"id":65,"a":"epith","o":"epithelium","p":"에피시리엄","m":"상피","t":"epithelium의 줄임말, 몸의 표면을 덮는 '상피'조직","c":17}]},{"id":"fund2","name":"기본간호학2 단어장","short":"기본간호학2","sub":"2학기 101~217번","cats":["검사·영상 검사","간호 조직·분류체계·기록","신체 부위·방향","활력징후·신체계측","투약 경로·영양 공급","투약 빈도 (라틴어 기원)","제형·용량 표현","처방·지시 체계","수면 관련","수술·처치·재활","검사결과·질환·상태","시간·빈도 표현","일반·행정"],"words":[{"id":101,"a":"IVP","o":"intravenous pyelography","p":"인트라비너스 파이엘로그라피","m":"정맥내 신우촬영술","t":"intra(안으로)+venous(정맥)+pyelo(신우)+graphy(촬영) → 정맥으로 조영제를 넣어 신우를 찍는 검사","c":0},{"id":102,"a":"K.U.B.","o":"Kidney, Ureter, Bladder","p":"키드니, 유리터, 블래더","m":"신장, 수뇨관, 방광","t":"비뇨기 3총사 영문 앞글자 그대로 콩팥(K)-요관(U)-방광(B) 순서로 암기","c":0},{"id":114,"a":"MRI","o":"Magnetic Resonance Imaging","p":"매그네틱 레저넌스 이미징","m":"자기공명영상","t":"이미 익숙한 단어: 자석(Magnetic)으로 공명(Resonance)시켜 영상(Imaging)을 찍는다","c":0},{"id":141,"a":"PFT","o":"pulmonary function test","p":"펄모너리 펑션 테스트","m":"폐기능 검사","t":"pulmonary=폐, function=기능 → '폐 기능 테스트' 그대로 직역","c":0},{"id":137,"a":"PEFR","o":"peak expiratory flow rate","p":"피크 엑스파이러토리 플로우 레이트","m":"최대 호기유속 검사","t":"peak(최고)+expiratory(내쉬는)+flow rate(속도) → 숨을 최대로 내쉴 때의 속도","c":0},{"id":212,"a":"VAS","o":"Visual Analogue Scale","p":"비주얼 애널로그 스케일","m":"시각사상척도","t":"통증사정 0~10 눈금자: Visual(시각적)+Scale(척도)로 통증강도 표시 ※ 원본 뜻은 시각사상척도로 적혀 있지만 보통 시각상사척도(시각통증척도)라고 불러요.","c":0},{"id":187,"a":"sp.gr","o":"specific gravity","p":"스페시픽 그래비티","m":"비중","t":"specific(특정한)+gravity(무게) → 소변 등 액체의 상대적 무게=비중","c":0},{"id":188,"a":"spec","o":"specimen","p":"스페서먼","m":"검사물","t":"specimen 앞 4글자만 딴 것, '스펙(spec) 검사물 제출'로 연상","c":0},{"id":190,"a":"SST","o":"serum separation tube","p":"시럼 세퍼레이션 튜브","m":"혈청분리튜브","t":"serum(혈청)을 separation(분리)하는 tube(튜브), 채혈관 중 하나","c":0},{"id":104,"a":"Lab","o":"laboratory","p":"래버러토리","m":"실험실","t":"laboratory의 앞 3글자, '랩실'이라는 우리말과 그대로 연결","c":1},{"id":103,"a":"KNA","o":"Korean Nurses Association","p":"코리안 널시스 어소시에이션","m":"대한간호협회","t":"Korean+Nurses+Association 앞글자 그대로 '한국 간호사 협회'","c":1},{"id":115,"a":"NANDA","o":"North American Nursing Diagnosis Association","p":"노스 아메리칸 널싱 다이어그노시스 어소시에이션","m":"북미간호진단협의회","t":"간호진단(Diagnosis) 대표기구 → '난다(NANDA)하고 진단명이 정해진다'로 연상","c":1},{"id":117,"a":"NIC","o":"nursing intervention classification","p":"널싱 인터벤션 클래시피케이션","m":"간호중재분류체계","t":"N-I-C = Nursing Intervention Classification, I=중재(Intervention)만 기억","c":1},{"id":120,"a":"NOC","o":"nursing outcome classification","p":"널싱 아웃컴 클래시피케이션","m":"간호결과분류체계","t":"NIC의 짝꿍, O=Outcome(결과)만 다르다고 기억 (중재NIC → 결과NOC)","c":1},{"id":118,"a":"NIS","o":"nursing information system","p":"널싱 인포메이션 시스템","m":"간호정보시스템","t":"Information=정보 → 간호 '정보'시스템, 전산 관련 용어","c":1},{"id":149,"a":"POMR","o":"problem-oriented medical record","p":"프라블럼 오리엔티드 메디컬 레코드","m":"문제중심의무기록","t":"Problem(문제)+Oriented(중심의)+Medical Record(의무기록) 그대로 결합","c":1},{"id":175,"a":"RN","o":"Registered Nurse","p":"레지스터드 널스","m":"등록(면허)간호사","t":"Register=등록하다 → 국가에 정식 등록된 간호사(면허간호사)","c":1},{"id":161,"a":"QA","o":"quality assurance","p":"퀄리티 어슈어런스","m":"질 보장","t":"Quality(질)+Assurance(보장), 최소 기준을 '보장'한다는 의미","c":1},{"id":163,"a":"QI","o":"quality improvement","p":"퀄리티 임프루브먼트","m":"질 향상","t":"QA(질 보장)의 다음 단계, Improvement=향상 → 한 단계 더 나아지는 것","c":1},{"id":106,"a":"LLQ","o":"left lower quadrant","p":"레프트 로어 쿼드런트","m":"좌측 하부 4분의 1","t":"복부를 4등분: L/R(좌우)+U/L(상하)+Q(4분의1) 조합만 바꿔서 4개 모두 암기","c":2},{"id":107,"a":"LUQ","o":"left upper quadrant","p":"레프트 어퍼 쿼드런트","m":"좌측 상부 4분의 1","t":"LLQ와 세트: Upper=상부, Lower=하부만 구분하면 됨","c":2},{"id":174,"a":"RLQ","o":"right lower quadrant","p":"라이트 로어 쿼드런트","m":"우측 하부 4분의 1","t":"L(왼쪽)을 R(오른쪽)로만 바꾸면 됨, 충수돌기염 통증부위로 유명","c":2},{"id":178,"a":"RUQ","o":"right upper quadrant","p":"라이트 어퍼 쿼드런트","m":"우측 상부 4분의 1","t":"간(liver)이 위치한 부위로 기억하면 오래 남음","c":2},{"id":169,"a":"R","o":"rectum","p":"렉텀","m":"직장","t":"Rectum의 첫 글자 R, '직장(Rectum)의 R'로 단순암기","c":2},{"id":177,"a":"Rt","o":"right","p":"라이트","m":"우측","t":"right의 앞 2글자를 딴 것, Lt(left)와 짝을 이룸","c":2},{"id":127,"a":"OD","o":"oculus dexter, right eye","p":"오큘루스 덱스터","m":"우측 눈","t":"dexter는 '오른쪽'이라는 뜻 → dexterity(손재주, 오른손잡이) 연상","c":2,"sp":1},{"id":130,"a":"OS","o":"oculus sinister, left eye","p":"오큘루스 시니스터","m":"좌측 눈","t":"sinister는 '왼쪽, 불길한'이라는 뜻 → 옛날 왼손을 불길하게 여긴 것과 연결","c":2,"sp":1},{"id":133,"a":"OU","o":"oculus uterque, both eyes","p":"오큘루스 우테르퀘","m":"양측 눈","t":"U=uterque(둘 다) → OU의 U를 '둘 다(Uterque)'로 기억","c":2,"sp":1},{"id":211,"a":"vag","o":"vagina","p":"바지이나","m":"질","t":"vagina의 앞 3글자를 그대로 줄인 것","c":2},{"id":195,"a":"T P R","o":"Temperature, Pulse, Respiration","p":"템퍼러처, 펄스, 레스퍼레이션","m":"체온, 맥박, 호흡","t":"체온-맥박-호흡, 기본 3대 활력징후를 순서 그대로 나열한 것 ※ 원본에는 Purse로 오타가 있어 Pulse(맥박)로 바로잡았어요.","c":3},{"id":209,"a":"V/S","o":"Vital Sign","p":"바이탈 사인","m":"활력징후","t":"Vital(생명의)+Sign(징후) → 생명과 직결된 신호, TPR+혈압을 포함","c":3},{"id":109,"a":"MAC","o":"mid arm circumference","p":"미드 암 서컴퍼런스","m":"중간 상박부 둘레","t":"mid(중간)+arm(팔)+circumference(둘레) → 팔 중간 둘레 측정","c":3},{"id":202,"a":"TSF","o":"triceps skin fold","p":"트라이셉스 스킨 폴드","m":"삼두박근 피부 주름 두께","t":"triceps(삼두근)+skin fold(피부주름) → 영양상태 사정 지표","c":3},{"id":179,"a":"RV","o":"residual volume","p":"레지듀얼 볼륨","m":"잔기량","t":"residual=남은 것 → 숨을 다 내쉬어도 폐에 '남는' 공기량","c":3},{"id":203,"a":"TV","o":"tidal volume","p":"타이달 볼륨","m":"일회호흡용적","t":"tidal=밀물썰물처럼 드나드는 → 한 번 들숨날숨에 오가는 공기량","c":3},{"id":213,"a":"VC","o":"vital capacity","p":"바이탈 캐패시티","m":"폐활량","t":"vital(생명의)+capacity(용량) → 폐가 담을 수 있는 최대 공기량","c":3},{"id":199,"a":"TLC","o":"total lung capacity","p":"토탈 렁 캐패시티","m":"총폐용량","t":"total(총)+lung(폐)+capacity(용량), VC보다 더 큰 개념(잔기량까지 포함)","c":3},{"id":192,"a":"SV","o":"stroke volume","p":"스트로크 볼륨","m":"일회박출량","t":"stroke=심장이 한 번 뛰는 박동 → 한 번 박동에 나가는 혈액량","c":3},{"id":208,"a":"V","o":"volume","p":"볼륨","m":"양","t":"volume의 앞글자, 부피·용량을 뜻하는 가장 기본 단어","c":3},{"id":217,"a":"Wt","o":"weight","p":"웨이트","m":"중량, 체중","t":"weight의 W+t만 딴 것, 발음 그대로 '웨이트'","c":3},{"id":105,"a":"Lb","o":"pound","p":"파운드","m":"파운드","t":"라틴어 libra의 약자, 무게 단위 파운드를 lb로 표기하는 것을 그대로 암기","c":3},{"id":134,"a":"oz","o":"ounce","p":"온스","m":"온스","t":"무게 단위 온스의 줄임말, 발음이 표기와 비슷해 암기 쉬움","c":3},{"id":155,"a":"pt","o":"pint","p":"파인트","m":"파인트","t":"부피 단위(약 0.47L), pint의 앞 2글자","c":3},{"id":166,"a":"qt","o":"quart","p":"콰트","m":"콰트","t":"quarter(4분의1)에서 유래, 1갤런의 4분의 1 부피","c":3},{"id":147,"a":"po","o":"per os, by mouth","p":"퍼 오스","m":"경구로","t":"os=입(라틴어) → '입으로(경구)' 투여한다는 뜻","c":4,"sp":1},{"id":181,"a":"sc","o":"sub cutis, subcutaneously","p":"서브큐테이니어슬리","m":"피하","t":"sub(아래)+cutis(피부) → 피부 아래(피하주사)에 놓는다","c":4,"sp":1},{"id":122,"a":"NPO","o":"non per os, nothing by mouth","p":"논 퍼 오스","m":"금식","t":"non+per os = '입으로 아무것도 안 됨' → 금식(NPO)","c":4,"sp":1},{"id":111,"a":"MDI","o":"metered-dose inhaler","p":"미터드 도즈 인헤일러","m":"정량식 흡입기","t":"metered(계량된)+dose(용량)+inhaler(흡입기) → 천식환자가 쓰는 흡입기","c":4},{"id":132,"a":"OTC","o":"over-the-counter drug","p":"오버 더 카운터","m":"비처방약","t":"계산대(counter) 너머로 바로 살 수 있는 약 → 처방전 없이 사는 약","c":4},{"id":146,"a":"PN","o":"parenteral nutrition","p":"퍼렌터럴 뉴트리션","m":"비경구 영양, 정맥영양","t":"para(옆)+enteral(장) → 장을 거치지 않는 영양공급(정맥으로)","c":4},{"id":200,"a":"TPN","o":"total parenteral nutrition","p":"토탈 퍼렌터럴 뉴트리션","m":"총비경구영양","t":"PN 앞에 total(총)이 붙어 '완전히' 정맥으로만 영양을 공급","c":4},{"id":124,"a":"NS(N/S)","o":"normal saline","p":"노멀 살린","m":"생리식염수","t":"normal(생리적인 농도)+saline(식염수) → 0.9% 생리식염수","c":4},{"id":157,"a":"q","o":"quaque, every","p":"콰케","m":"매, 마다","t":"quaque=매번이라는 뜻, q가 보이면 무조건 '매~'로 해석 시작","c":5,"sp":1},{"id":158,"a":"q h","o":"quaque hora, every hour","p":"콰케 호라","m":"매시간","t":"q(매)+h(hour, 시간) = 매시간","c":5,"sp":1},{"id":159,"a":"q n","o":"quaque nocte, every night","p":"콰케 녹테","m":"매일 밤마다","t":"q(매)+n(nocte, 밤) = 매일 밤마다","c":5,"sp":1},{"id":160,"a":"q2h","o":"quaque 2 hore","p":"콰케 투 호레","m":"매 2시간마다","t":"q+숫자+h = '숫자시간마다', 숫자만 바꿔서 q4h, q6h로 확장 가능","c":5},{"id":162,"a":"qd","o":"quaque die","p":"콰케 디에","m":"매일","t":"q(매)+d(die, 하루) = 매일","c":5},{"id":182,"a":"sid","o":"semel in die","p":"세멜 인 디에","m":"하루 한번만","t":"semel=한 번(once) → 하루에 딱 1번만 투여","c":5},{"id":198,"a":"tid","o":"ter in die, three times a day","p":"테르 인 디에","m":"하루 세 번","t":"ter=3번(triple과 연결) → 하루 3번 투여 ※ 원본의 three times a day 표기를 함께 실었어요.","c":5,"sp":1},{"id":164,"a":"qid","o":"quarter in die, four times a day","p":"쿼터 인 디에","m":"하루 4번","t":"quarter=4 → 하루 4번(대략 6시간마다) 투여 ※ 원본 표기는 quarter지만 라틴어 표준 철자는 quater예요.","c":5,"alt":["quater in die, four times a day","quater in die"],"sp":1},{"id":153,"a":"prn","o":"pro re nata, when needed","p":"프로 레 나타","m":"필요시마다","t":"'그때그때 상황(re nata)에 따라' → 필요할 때마다 투여","c":5,"sp":1},{"id":191,"a":"stat","o":"statim","p":"스타팀","m":"즉시","t":"응급상황에서 '스탯!' 외치는 장면을 연상하면 '즉시'가 바로 떠오름","c":5},{"id":121,"a":"non rep","o":"non repetatur, do not repeat","p":"논 레페타투르","m":"반복하지 말 것","t":"non(아니다)+repeat(반복) → 한 번만 주고 반복하지 마라","c":5,"sp":1},{"id":186,"a":"SOS","o":"si opus sit","p":"시 오푸스 시트","m":"위급시","t":"구조신호 SOS(도와주세요)를 그대로 연상 → 위급할 때","c":5},{"id":136,"a":"pc","o":"post cibum, after meals","p":"포스트 시붐","m":"식후","t":"post(이후)+cibum(식사) → 식사 후에 복용","c":5,"sp":1},{"id":197,"a":"tab","o":"tabella, tablet","p":"타벨라","m":"정","t":"tablet(정제)의 앞 3글자, 발음도 그대로 '탭'","c":6,"sp":1},{"id":144,"a":"Pil","o":"pilura","p":"필루라","m":"환","t":"pill(알약)과 발음이 비슷 → 둥글게 뭉친 환약 ※ 원본 표기는 pilura지만 라틴어 표준 철자는 pilula(환약)예요.","c":6,"alt":["pilula"]},{"id":156,"a":"pulv","o":"pulvis","p":"풀비스","m":"가루, 산제","t":"pulverize(가루로 만들다)와 어원이 같음","c":6},{"id":206,"a":"ung","o":"unguentum","p":"운구엔툼","m":"연고(ointment)","t":"un~으로 시작하는 끈적한 어감을 연고와 연결해서 암기","c":6},{"id":184,"a":"Sol","o":"solution","p":"솔루션","m":"용액","t":"solution의 앞 3글자, 발음 그대로 '솔'","c":6},{"id":185,"a":"solv","o":"solvent","p":"솔벤트","m":"용해제","t":"Sol(용액)을 만드는 재료가 되는 solv(용해제)로 세트 암기","c":6},{"id":194,"a":"syr","o":"syrup","p":"시럽","m":"시럽","t":"syrup의 앞 3글자, 발음이 표기와 동일","c":6},{"id":201,"a":"Tr or tindt","o":"tinctura, tincture","p":"팅크투라","m":"팅크제","t":"알코올에 약물 성분을 우려낸 제제, '팅크제'라는 발음 그대로 기억","c":6,"sp":1},{"id":189,"a":"ss","o":"semissis, one half","p":"세미시스","m":"반","t":"semi=절반(half) → s를 두 번 써서 '반(½)'을 표시","c":6,"sp":1},{"id":165,"a":"qs","o":"quantum satis (sufficit) / sufficient quantity","p":"퀀텀 사티스","m":"충분한 양","t":"quantum(양)+satis(충분한) → 필요한 만큼 충분히 ※ 원본의 sufficient quantity(충분한 양) 표기를 함께 실었어요.","c":6,"sp":1},{"id":205,"a":"u","o":"unit","p":"유닛","m":"단위","t":"unit의 첫 글자, 인슐린 등의 투여 단위로 자주 사용","c":6},{"id":183,"a":"sig","o":"signal, signature","p":"시그널, 시그니처","m":"신호, 서명","t":"처방전에 사용법을 '표시(signature)'한다는 뜻","c":6,"sp":1},{"id":148,"a":"po","o":"phone order","p":"폰 오더","m":"전화지시","t":"경구투여 po와 철자가 똑같아 헷갈리기 쉬움! 앞뒤 문맥으로 구분할 것","c":7},{"id":214,"a":"VO","o":"verbal order","p":"버벌 오더","m":"구두지시","t":"verbal=말로 하는 → 서면 없이 구두로 내린 지시","c":7},{"id":152,"a":"prep","o":"preparation","p":"프레퍼레이션","m":"준비","t":"preparation의 줄임말, 수술/검사 전 '준비'를 뜻함","c":7},{"id":172,"a":"REM sleep","o":"rapid eye movement sleep","p":"래피드 아이 무브먼트 슬립","m":"급속안구운동수면","t":"눈동자가 빠르게(Rapid) 움직이는 얕은 잠, 주로 꿈을 꾸는 단계","c":8},{"id":123,"a":"NREM sleep","o":"nonrapid eye movement sleep","p":"논래피드 아이 무브먼트 슬립","m":"비급속안구운동수면","t":"REM 앞에 non이 붙어 반대 개념, 안구운동이 없는 깊은 잠","c":8},{"id":131,"a":"OSA","o":"obstructive sleep apnea","p":"옵스트럭티브 슬립 애프니아","m":"폐쇄성 수면무호흡증","t":"obstructive(막힌)+apnea(무호흡) → 기도가 막혀 숨을 못 쉬는 수면장애","c":8},{"id":170,"a":"RAS","o":"reticular activation system","p":"레티큘러 액티베이션 시스템","m":"망상활성계","t":"reticular(그물모양)+activation(각성) → 그물처럼 뇌를 깨워주는 각성시스템","c":8},{"id":129,"a":"OR","o":"Operating Room","p":"오퍼레이팅 룸","m":"수술실","t":"Operating(수술하는)+Room(방) → 수술실 그대로","c":9},{"id":150,"a":"post op","o":"postoperative(ly)","p":"포스트옵","m":"수술 후","t":"post(이후)+op(operation, 수술) → 수술 후","c":9},{"id":151,"a":"pre op","o":"preoperative(ly)","p":"프리옵","m":"수술 전","t":"pre(이전)+op(operation, 수술) → 수술 전","c":9},{"id":138,"a":"PEG","o":"percutaneous endoscopic gastrostomy","p":"퍼큐테이니어스 엔도스코픽 가스트로스토미","m":"경피내시경하 위루술","t":"percutaneous(경피)+endoscopic(내시경)+gastrostomy(위루술) 결합어","c":9},{"id":139,"a":"PEJ","o":"percutaneous endoscopic jejunostomy","p":"퍼큐테이니어스 엔도스코픽 제주노스토미","m":"경피내시경하 공장루술","t":"PEG와 짝꿍: gastro(위) 대신 jejuno(공장)만 다름","c":9},{"id":196,"a":"T&A","o":"tonsil & adenoid","p":"톤실 앤 아데노이드","m":"편도선과 아데노이드","t":"소아에게 흔한 수술: 편도선(tonsil)+아데노이드(adenoid) 동시 절제","c":9},{"id":140,"a":"PFMT","o":"pelvic floor muscle training","p":"펠빅 플로어 머슬 트레이닝","m":"골반저부근육강화훈련","t":"pelvic floor muscle(골반저근) 훈련=케겔운동과 관련된 근육 훈련","c":9},{"id":176,"a":"ROM","o":"range of motion","p":"레인지 오브 모션","m":"운동범위","t":"range(범위)+motion(움직임) → 관절이 움직일 수 있는 범위","c":9},{"id":154,"a":"PT","o":"physical therapy","p":"피지컬 세러피","m":"물리요법","t":"physical(신체의)+therapy(치료) → 물리치료 그대로","c":9},{"id":116,"a":"neg","o":"negative","p":"네거티브","m":"음성","t":"negative의 앞 3글자, 검사결과가 '음성(없음)'임을 표시","c":10},{"id":142,"a":"PH","o":"past history","p":"패스트 히스토리","m":"과거력, 기왕력","t":"past(과거)+history(병력) → 대문자 PH는 과거력","c":10},{"id":143,"a":"pH","o":"power of hydrogen","p":"파워 오브 하이드로젠","m":"수소지수","t":"소문자 pH는 산도! 대문자 PH(과거력)와 헷갈리지 않게 대소문자로 구분암기","c":10},{"id":173,"a":"Rh","o":"Rhesus","p":"리서스","m":"리서스(RH식 혈액형)","t":"붉은털원숭이(Rhesus monkey) 실험에서 발견된 혈액형 인자","c":10},{"id":171,"a":"RBC","o":"Red Blood Cell","p":"레드 블러드 셀","m":"적혈구","t":"Red(빨간)+Blood(피)+Cell(세포) → 색깔 그대로 적혈구","c":10},{"id":215,"a":"WBC","o":"white blood cell","p":"화이트 블러드 셀","m":"백혈구","t":"RBC와 짝꿍: Red→White만 바뀌면 적혈구→백혈구","c":10},{"id":216,"a":"WNL","o":"within normal limits","p":"위딘 노멀 리미츠","m":"정상범위 내","t":"within(안에)+normal limits(정상범위) → 정상 범위 안","c":10},{"id":193,"a":"Sx","o":"symptoms","p":"심텀즈","m":"증상","t":"Dx(진단)-Tx(치료)-Sx(증상) 세트로 함께 암기하면 오래 남음","c":10},{"id":207,"a":"UTI","o":"urinary tract infection","p":"유리너리 트랙트 인펙션","m":"하부요로감염","t":"urinary tract(요로)+infection(감염) 그대로 결합","c":10},{"id":210,"a":"VAD","o":"vascular access device","p":"배스큘러 액세스 디바이스","m":"정맥주입기구","t":"vascular(혈관)+access(접근)+device(기구) → 혈관에 접근하는 카테터 등","c":10},{"id":135,"a":"palp","o":"palpation","p":"팰페이션","m":"촉진","t":"신체사정 4단계(시진-촉진-타진-청진) 중 하나, '팔파'로 발음 기억","c":10},{"id":204,"a":"Tx","o":"treatment","p":"트리트먼트","m":"치료","t":"Sx(증상)-Dx(진단)-Tx(치료) 세트로 함께 암기","c":10},{"id":110,"a":"MD","o":"mid-day","p":"미드데이","m":"정오","t":"mid(중간)+day(낮) → 하루의 중간=정오(낮 12시)","c":11},{"id":113,"a":"mn","o":"mid-night","p":"미드나이트","m":"자정","t":"mid(중간)+night(밤) → 밤의 중간=자정(밤 12시)","c":11},{"id":145,"a":"PM","o":"post-meridian, afternoon","p":"포스트메리디안","m":"오후","t":"meridian=정오(자오선) → 정오 이후(post)=오후 ※ 원본 표기는 post-meridian이지만 라틴어 표준 표기는 post meridiem이에요.","c":11,"alt":["post meridiem, afternoon","post meridiem"],"sp":1},{"id":112,"a":"min","o":"minute","p":"미닛","m":"분","t":"minute의 앞 3글자, 시간 단위 '분'","c":11},{"id":126,"a":"occ","o":"occasionally","p":"어케이저널리","m":"때때로","t":"occasionally의 앞 3글자, '어쩌다 한 번씩'이라는 어감 그대로","c":11},{"id":108,"a":"M","o":"male","p":"메일","m":"남자, 남성","t":"male의 첫 글자, F(female, 여성)와 짝을 이룸","c":12},{"id":119,"a":"no","o":"number","p":"넘버","m":"번호, 숫자","t":"number의 줄임말 no.는 일상에서도 자주 쓰는 표기","c":12},{"id":167,"a":"r","o":"rhythm","p":"리듬","m":"리듬","t":"소문자 r이 활력징후 기록에서 맥박·호흡의 '리듬'을 의미할 때 사용","c":12},{"id":168,"a":"r","o":"rate","p":"레이트","m":"율","t":"같은 소문자 r이 문맥에 따라 '율(rate)'을 의미하기도 함 → 앞뒤 문맥으로 구분","c":12},{"id":180,"a":"S(s)","o":"sine, without","p":"시네","m":"없이","t":"라틴어 sine=without, 처방 기록에서 '~없이'를 표시할 때 사용","c":12,"sp":1},{"id":125,"a":"OB","o":"obstetrics","p":"옵스테트릭스","m":"산과","t":"산부인과 중 '산'과 담당, 출산을 다루는 진료과","c":12},{"id":128,"a":"OPD","o":"outpatient department","p":"아웃페이션트 디파트먼트","m":"외래진료부","t":"outpatient(외래환자)+department(부서) → 입원하지 않는 외래 환자 진료부서","c":12}]},{"id":"pre","name":"PRE-CLINIC 단어장","short":"PRE-CLINIC","sub":"병동약어·간호용어·질환명·진료용어","cats":["병동·진료과 약어","간호관련 용어","질환명","진료관련 의학용어"],"words":[{"id":1001,"a":"IM","o":"Internal medicine","p":"인터널 메디슨","m":"내과","t":"내과의 세부전공:내과의 세부전공: 호흡기(Pulmonology)·순환기(Cardiology)·소화기(Gastroenterology)·혈액종양(Hemato-oncology)·내분비(내과의 세부전공:내과의 세부전공: 호흡기(Pulmonology)·순환기(Cardiology)·소화기(Gastroenterology)·혈액종양(Hemato-oncology)·내분비(Endocrinology)·알레르기(Allergology)·신장(Nephrology)내과가내과의 세부전공:내과의 세부전공: 호흡기(Pulmonology)·순환기(Cardiology)·소화기(Gastroenterology)·혈액종양(Hemato-oncology)·내분비(내과의 세부전공:내과의 세부전공: 호흡기(Pulmonology)·순환기(Cardiology)·소화기(Gastroenterology)·혈액종양(Hemato-oncology)·내분비(Endocrinology)·알레르기(Allergology)·신장(Nephrology)내과가 모두 IM 산하","c":0},{"id":1002,"a":"GS","o":"General Surgery","p":"제너럴 서저리","m":"일반외과","t":"General(일반)+Surgery(외과) → 외과의 기본, 복부수술 등을 주로 담당","c":0},{"id":1003,"a":"CS / TS","o":"Thoracic and Cardiovascular Surgery","p":"소라식 앤 카디오배스큘러 서저리","m":"흉부외과","t":"Thoracic(흉부)+Cardiovascular(심혈관) → 심장·폐 수술 담당과","c":0},{"id":1004,"a":"NS","o":"Neurosurgery","p":"뉴로서저리","m":"신경외과","t":"Neuro(신경)+Surgery(외과) → 뇌·척수 수술 담당","c":0},{"id":1005,"a":"OS","o":"Orthopedic Surgery","p":"오소피딕 서저리","m":"정형외과","t":"Orthopedic(정형의)+Surgery(외과) → 뼈·관절 수술 담당","c":0},{"id":1006,"a":"PS","o":"Plastic & Reconstructive Surgery","p":"플라스틱 앤 리컨스트럭티브 서저리","m":"성형외과","t":"Plastic(성형)+Reconstructive(재건) → 미용 및 재건 수술 담당","c":0},{"id":1007,"a":"OBGY","o":"Obstetrics and Gynecology","p":"옵스테트릭스 앤 가이네콜로지","m":"산부인과","t":"Obstetrics(산과)+Gynecology(부인과) → 임신·출산과 여성질환을 함께 보는 과","c":0},{"id":1008,"a":"DR","o":"Delivery room","p":"딜리버리 룸","m":"분만실","t":"Delivery(분만)+Room(실) → 아기를 낳는 방, 그대로 직역","c":0},{"id":1009,"a":"PED","o":"Pediatrics","p":"피디애트릭스","m":"소아과","t":"Pediatrics 앞 3글자, 어린이를 진료하는 과","c":0},{"id":1010,"a":"NR","o":"Newborn room","p":"뉴본 룸","m":"신생아실","t":"Newborn(신생아)+Room(실) → 갓 태어난 아기가 있는 방","c":0},{"id":1011,"a":"DERMA","o":"Dermatology","p":"더마톨로지","m":"피부과","t":"Dermatology 앞 5글자, derma=피부라는 뜻의 접두사","c":0},{"id":1012,"a":"URO","o":"Urology","p":"유롤로지","m":"비뇨기과","t":"Urology 앞 3글자, uro=소변·비뇨기와 관련된 접두사","c":0},{"id":1013,"a":"OPHT","o":"Ophthalmology","p":"옵쌜몰로지","m":"안과","t":"Ophthalmology 앞부분, ophthalmo=눈과 관련된 접두사","c":0},{"id":1014,"a":"ENT","o":"ear, nose, throat","p":"이어, 노즈, 스로트","m":"이비인후과","t":"ear(귀)+nose(코)+throat(목) → 귀,코,목을 보는 진료과","c":0},{"id":1015,"a":"NR","o":"Neurology","p":"뉴롤로지","m":"신경과","t":"주의! 앞의 NR(신생아실)과 같은 약어지만 전혀 다른 뜻 → 문맥으로 구분","c":0},{"id":1016,"a":"NP","o":"Psychiatry","p":"사이카이어트리","m":"신경정신과","t":"정신과를 뜻하는 약어, 신경과 NR과 혼동 주의","c":0},{"id":1017,"a":"FM","o":"Family Medicine","p":"패밀리 메디슨","m":"가정의학과","t":"Family(가족)+Medicine(의학) → 전반적인 건강을 돌보는 가정의학과","c":0},{"id":1018,"a":"DENT","o":"Dentistry","p":"덴티스트리","m":"치과","t":"Dentistry 앞 4글자, dent=이빨과 관련된 어근","c":0},{"id":1019,"a":"(약어 없음)","o":"Anesthesiology","p":"애네스씨지올로지","m":"마취과","t":"원본 자료에 별도 약어 표기가 없음, anesthesia(마취)에서 파생된 단어로 암기","c":0,"na":1},{"id":1020,"a":"OR","o":"Operation room","p":"오퍼레이션 룸","m":"수술실","t":"Operation(수술)+Room(실) → 수술을 진행하는 방","c":0},{"id":1021,"a":"ER","o":"Emergency room","p":"이머전시 룸","m":"응급실","t":"Emergency(응급)+Room(실) → 이미 익숙한 응급실 약어","c":0},{"id":1022,"a":"MICU","o":"Medical intensive care unit","p":"메디컬 인텐시브 케어 유닛","m":"내과계 중환자실","t":"Medical(내과의)+ICU(중환자실) → 내과 질환 중환자를 보는 ICU","c":0},{"id":1023,"a":"SICU","o":"Surgical intensive care unit","p":"서지컬 인텐시브 케어 유닛","m":"외과계 중환자실","t":"Surgical(외과의)+ICU → 수술 후 중환자를 보는 ICU, MICU와 짝","c":0},{"id":1024,"a":"NSICU","o":"Neurosciences intensive care unit","p":"뉴로사이언스 인텐시브 케어 유닛","m":"신경계 중환자실","t":"Neurosciences(신경과학)+ICU → 뇌신경계 중환자실","c":0},{"id":1025,"a":"CSICU","o":"Cardiac Surgery intensive care unit","p":"카디악 서저리 인텐시브 케어 유닛","m":"심장계 중환자실","t":"Cardiac Surgery(심장수술)+ICU → 심장수술 후 중환자실","c":0},{"id":1026,"a":"CCU","o":"Coronary Care unit","p":"코로너리 케어 유닛","m":"관상동맥 환자진료부","t":"Coronary(관상동맥의)+Care Unit → 심장질환 전문 병동","c":0},{"id":1027,"a":"NICU","o":"Neonatal intensive care unit","p":"니오네이털 인텐시브 케어 유닛","m":"신생아 중환자실","t":"Neonatal(신생아의)+ICU → 미숙아 등 신생아 중환자실","c":0},{"id":1028,"a":"PICU","o":"Pediatric intensive care unit","p":"피디애트릭 인텐시브 케어 유닛","m":"소아과 중환자실","t":"Pediatric(소아의)+ICU → 어린이 중환자실","c":0},{"id":1029,"a":"OPD","o":"Outpatient Department","p":"아웃페이션트 디파트먼트","m":"외래진료부","t":"Outpatient(외래환자)+Department(부서) → 입원하지 않는 외래 진료부서","c":0},{"id":1030,"a":"CSR","o":"Central supply room","p":"센트럴 서플라이 룸","m":"중앙 공급실","t":"Central(중앙)+Supply Room(공급실) → 소독물품 등을 공급하는 부서","c":0},{"id":1031,"a":"abd.","o":"abdomen","p":"앱더먼","m":"복부","t":"abdomen의 줄임, 발음 그대로 '앱드'","c":1},{"id":1032,"a":"ABR","o":"Absolute bed rest / bed rest","p":"앱솔루트 베드 레스트","m":"절대침상안정/침상안정","t":"absolute(절대적인)+bed rest(침상안정) → 움직임을 완전히 제한","c":1,"sp":1},{"id":1033,"a":"ABP","o":"Arterial blood pressure","p":"아테리얼 블러드 프레셔","m":"동맥혈압","t":"arterial(동맥의)+blood pressure(혈압) → 동맥에서 측정하는 혈압","c":1},{"id":1034,"a":"BSA","o":"Body surface area","p":"바디 서피스 에어리어","m":"체표면적","t":"body(신체)+surface area(표면적) → 약물 용량 계산 등에 사용","c":1},{"id":1035,"a":"CAPD","o":"Continuous Ambulatory Peritoneal Dialysis","p":"컨티뉴어스 앰뷸러토리 페리토니얼 다이알러시스","m":"지속적 복막투석","t":"continuous(지속적인)+ambulatory(보행 가능한)+peritoneal dialysis(복막투석) → 집에서도 가능한continuous(지속적인)+ambulatory(보행 가능한)+peritoneal dialysis(복막투석) → 집에서도 가능한 투석법","c":1},{"id":1036,"a":"CPCR","o":"Cardiopulmonary cerebral resuscitation","p":"카디오펄모너리 세레브럴 리서시테이션","m":"심폐소생술","t":"CPR에 cerebral(뇌의)이 추가된 확장형, 뇌소생까지 포함한 심폐소생술","c":1},{"id":1037,"a":"CRRT","o":"continue renal replacement therapy","p":"컨티뉴 리널 리플레이스먼트 세러피","m":"지속적 신대체 요법","t":"continue(지속)+renal replacement therapy(신대체요법) → 중환자용 지속적 혈액투석","c":1},{"id":1038,"a":"Cx","o":"complication","p":"컴플리케이션","m":"합병증","t":"complication의 C+x, Dx(진단)·Tx(치료)와 같은 x축약 패턴","c":1},{"id":1039,"a":"D/C","o":"Discontinue","p":"디스컨티뉴","m":"중지","t":"discontinue의 줄임, 투약·처치를 '중지'","c":1},{"id":1040,"a":"D&C","o":"Dilatation and Curettage","p":"딜레이테이션 앤 큐레타지","m":"자궁경관 확장 소파술","t":"dilatation(확장)+curettage(긁어냄) → 자궁경부를 넓히고 내막을 긁어내는 시술","c":1},{"id":1041,"a":"DNR","o":"Do not resuscitation","p":"두 낫 리서시테이션","m":"심폐소생술 포기","t":"Do not(하지 말라)+Resuscitation(소생술) → 소생술을 시행하지 않겠다는 사전의사 ※ 원래 영어 표현은 Do not resuscitate예요.","c":1,"alt":["do not resuscitate"]},{"id":1042,"a":"DOA","o":"Death on arrival","p":"데스 온 어라이벌","m":"도착시 사망","t":"Death(사망)+on arrival(도착시) → 병원 도착 당시 이미 사망","c":1},{"id":1043,"a":"DR","o":"Delivery room","p":"딜리버리 룸","m":"분만실","t":"앞 섹션의 DR(분만실)과 동일한 약어·뜻, 간호기록에서도 자주 사용","c":1},{"id":1044,"a":"DSC","o":"Day surgery center","p":"데이 서저리 센터","m":"통원수술센터","t":"Day surgery(당일수술)+Center(센터) → 입원 없이 당일 퇴원하는 수술센터","c":1},{"id":1045,"a":"DTR","o":"Deep tendon reflex","p":"딥 텐던 리플렉스","m":"심부건 반사","t":"deep(깊은)+tendon(건)+reflex(반사) → 무릎반사 등 신경계 사정 항목","c":1},{"id":1046,"a":"EDBC","o":"Encourage deep breathing and coughing","p":"인커리지 딥 브리딩 앤 코핑","m":"심호흡과 기침 격려","t":"encourage(격려하다)+deep breathing and coughing(심호흡과 기침) → 수술 후 폐합병증 예방 간호","c":1},{"id":1047,"a":"EDC","o":"Estimated day of confinement","p":"에스티메이티드 데이 오브 컨파인먼트","m":"분만예정일","t":"estimated(예상되는)+day of confinement(출산일) → 출산예정일 ※ 흔히 Estimated date of confinement로도 써요.","c":1,"alt":["estimated date of confinement"]},{"id":1048,"a":"EMR","o":"Electronic medical record","p":"일렉트로닉 메디컬 레코드","m":"전자의무기록","t":"electronic(전자의)+medical record(의무기록) → 종이차트 대신 전자기록","c":1},{"id":1049,"a":"ENBD","o":"Endoscopic naso-biliary drainage","p":"엔도스코픽 나소빌리어리 드레이니지","m":"내시경적 경피적 담즙배출","t":"endoscopic(내시경의)+naso-biliary drainage(코를 통한 담즙배액) → 코로 빼낸 담즙배액관 ※ 원본 뜻은 경피적이지만 naso(코)를 통하므로 정확히는 경비적(코를 통한) 담즙배액이에요.","c":1},{"id":1050,"a":"ENR","o":"electronic nursing record","p":"일렉트로닉 널싱 레코드","m":"전자간호기록","t":"EMR(전자의무기록)의 간호 버전, nursing(간호)만 바뀐 것","c":1},{"id":1051,"a":"FAS","o":"facial analogue scale","p":"페이셜 애널로그 스케일","m":"얼굴통증 척도","t":"facial(얼굴의)+analogue scale(아날로그 척도) → 표정 그림으로 통증을 표현하는 척도","c":1},{"id":1052,"a":"F-cath","o":"indwelling urinary catheterization","p":"인드웰링 유리너리 카테터라이제이션","m":"유치 도뇨","t":"foley catheter의 F, 방광에 '유치'해두는 도뇨관","c":1},{"id":1053,"a":"FHT","o":"Fetal heart tone","p":"피탈 하트 톤","m":"태아심음","t":"fetal(태아의)+heart tone(심음) → 태아의 심장박동 소리","c":1},{"id":1054,"a":"f/u","o":"follow up","p":"팔로우 업","m":"추적관찰","t":"follow up 그대로, 외래에서 경과를 계속 지켜본다는 뜻","c":1},{"id":1055,"a":"FUO","o":"Fever of unknown origin","p":"피버 오브 언노운 오리진","m":"원인불명 열","t":"fever(열)+unknown origin(원인불명) → 원인을 못 찾은 발열","c":1},{"id":1056,"a":"GCS","o":"Glasgow coma scale","p":"글래스고우 코마 스케일","m":"글라스고우 혼수 척도","t":"지명 Glasgow(글래스고)에서 개발된 coma(혼수) 평가 척도, 의식수준 사정에 필수 ※ 원본의 Glasgow(원본 오타 glasogow)를 뜻에 다시 넣었어요.","c":1},{"id":1057,"a":"GFR","o":"glomerular filtration rate","p":"글로메럴러 필트레이션 레이트","m":"사구체 여과율","t":"glomerular(사구체의)+filtration rate(여과율) → 신장기능을 나타내는 대표 수치","c":1},{"id":1058,"a":"HE","o":"Head elevation","p":"헤드 엘리베이션","m":"침상올리기","t":"Head(머리)+elevation(올림) → 침상머리를 올리는 체위","c":1},{"id":1059,"a":"HD","o":"Hospital day / Hemodialysis","p":"하스피털 데이, 헤모다이알러시스","m":"입원일수 / 혈액투석","t":"Hospital day(입원일수)와 Hemodialysis(혈액투석) 두 가지 뜻으로 쓰이니 문맥으로 구분","c":1,"sp":1},{"id":1060,"a":"HTGE","o":"hypertonic glucose enema","p":"하이퍼토닉 글루코스 에니마","m":"고장성 포도당 관장","t":"hypertonic(고장성의)+glucose enema(포도당 관장) → 고장성 포도당 용액으로 하는 관장","c":1},{"id":1061,"a":"I&D","o":"incision and drainage","p":"인시전 앤 드레이니지","m":"절개 및 배농술","t":"incision(절개)+drainage(배액) → 고름을 빼내기 위해 절개 후 배농","c":1},{"id":1062,"a":"I/O","o":"intake / output","p":"인테이크, 아웃풋","m":"섭취 및 배설량","t":"intake(섭취량)+output(배설량) → 체액균형 확인의 기본 지표","c":1},{"id":1063,"a":"IABP","o":"intra-aortic balloon pump","p":"인트라 에이오틱 발룬 펌프","m":"대동맥내 풍선펌프","t":"intra(안으로)+aortic(대동맥의)+balloon pump(풍선펌프) → 심장보조장치","c":1},{"id":1064,"a":"ID/OD","o":"inner diameter / outer diameter","p":"이너 다이어미터, 아우터 다이어미터","m":"내경/ 외경","t":"inner(내부)+outer(외부)+diameter(지름) → 튜브·카테터 굵기 표기 시 사용","c":1},{"id":1065,"a":"IPC","o":"intermittent pneumatic","p":"인터미턴트 뉴매틱","m":"간헐적 압박기구","t":"intermittent(간헐적인)+pneumatic(공기압의) → 혈전예방용 다리 압박기구 ※ 원래 명칭은 intermittent pneumatic compression(간헐적 공기압박)이에요.","c":1,"alt":["intermittent pneumatic compression"]},{"id":1066,"a":"J-P tube","o":"Jackson Pratt tube","p":"잭슨 프랫 튜브","m":"수술 후 분비물 배액관(J-P드레인)","t":"개발자 Jackson과 Pratt의 이름을 딴 배액관, 수술 후 삼출물 배출","c":1},{"id":1067,"a":"KVO","o":"keep vein open","p":"킵 베인 오픈","m":"정맥이 막히지 않게 유지","t":"keep(유지하다)+vein open(정맥을 열어둠) → 최소 속도로 수액을 흘려 혈관 확보","c":1},{"id":1068,"a":"LBP","o":"low back pain","p":"로우 백 페인","m":"요통","t":"low back(허리)+pain(통증) → 허리 통증 그대로","c":1},{"id":1069,"a":"MRSA","o":"methicillin resistant staphylococcus aureus","p":"메티실린 리지스턴트 스타필로코커스 아우레우스","m":"메타실린 내성 포도상구균","t":"methicillin resistant(메티실린 내성)+staphylococcus aureus(황색포도상구균) → 대표적 항생제methicillin resistant(메티실린 내성)+staphylococcus aureus(황색포도상구균) → 대표적 항생제 내성균","c":1},{"id":1070,"a":"nelaton","o":"intermittent urinary catheterization","p":"넬라톤","m":"단순도뇨","t":"개발자 이름 Nélaton에서 유래, F-cath(유치도뇨)와 달리 1회성 단순도뇨","c":1},{"id":1071,"a":"NIBP","o":"Non-invasive blood pressure","p":"넌 인베이시브 블러드 프레셔","m":"비침습적 혈압","t":"non-invasive(비침습적인)+blood pressure(혈압) → 커프로 재는 일반적 혈압측정","c":1},{"id":1072,"a":"NPO","o":"nothing per oral","p":"낫씽 퍼 오럴","m":"금식","t":"nothing(아무것도 없음)+per oral(경구로) → 입으로 아무것도 섭취하지 않음","c":1},{"id":1073,"a":"NRS","o":"numeric scale","p":"뉴메릭 스케일","m":"숫자(통증)척도","t":"numeric(숫자의)+scale(척도) → 0~10 숫자로 통증을 표현하는 척도","c":1},{"id":1074,"a":"O&C","o":"open and closure","p":"오픈 앤 클로저","m":"개방 및 봉합","t":"open(열기)+closure(봉합) → 수술 시 절개와 봉합을 함께 지칭","c":1},{"id":1075,"a":"PD","o":"peritoneal dialysis","p":"페리토니얼 다이알러시스","m":"복막투석","t":"peritoneal(복막의)+dialysis(투석) → 복막을 이용한 투석법","c":1},{"id":1076,"a":"POD","o":"Post operative day","p":"포스트 오퍼러티브 데이","m":"수술후 일수","t":"post operative(수술 후의)+day(일수) → 수술 후 며칠째인지 표시","c":1},{"id":1077,"a":"PR","o":"physical restrain","p":"피지컬 리스트레인","m":"억제대 적용","t":"physical(신체적인)+restrain(억제) → 낙상방지 등을 위한 억제대 적용","c":1},{"id":1078,"a":"PT","o":"physical therapy","p":"피지컬 세러피","m":"물리치료","t":"physical(신체의)+therapy(치료) → 물리치료 그대로","c":1},{"id":1079,"a":"R/O","o":"rule out","p":"룰 아웃","m":"가진단","t":"rule out(배제하다) → 다른 가능성을 배제해가며 좁혀가는 진단 과정","c":1},{"id":1080,"a":"RD/SD/LD","o":"regular diet / soft diet / liquid diet","p":"레귤러, 소프트, 리퀴드 다이어트","m":"밥/ 죽/ 미음","t":"regular(일반)/soft(부드러운)/liquid(액체) → 식사 형태 단계별 분류","c":1},{"id":1081,"a":"ROA","o":"rupture of amniotic","p":"럽처 오브 애니오틱","m":"양막 파열","t":"rupture(파열)+amniotic(양막의) → 양수가 터진 상태(조기양막파열 등)","c":1},{"id":1082,"a":"ROM","o":"range of movement","p":"레인지 오브 무브먼트","m":"운동 범위","t":"range(범위)+movement(움직임) → 관절이 움직일 수 있는 범위","c":1},{"id":1083,"a":"SB-tube","o":"Sengstaken Blakemore tube","p":"셍스테이큰 블레이크모어 튜브","m":"SB튜브","t":"개발자 Sengstaken과 Blakemore의 이름, 식도정맥류 출혈 압박용 튜브","c":1},{"id":1084,"a":"SOB","o":"shortness of breath","p":"숏니스 오브 브레스","m":"짧으면서 빈 호흡","t":"shortness(짧음)+of breath(호흡의) → 숨이 차는 호흡곤란 상태","c":1},{"id":1085,"a":"T/F","o":"time free","p":"타임 프리","m":"시간이 정해져있지 않은","t":"time(시간)+free(자유로운) → 특정 시간에 구애받지 않는다는 뜻","c":1},{"id":1086,"a":"VAS","o":"visual analogue scale","p":"비주얼 애널로그 스케일","m":"시각통증척도","t":"visual(시각적)+analogue scale(아날로그 척도) → 눈금자로 통증 강도 표시","c":1},{"id":1087,"a":"VDRL","o":"Venereal Disease Research Laboratory","p":"비너리얼 디지즈 리서치 래버러토리","m":"매독 선별검사","t":"Venereal Disease(성병)+Research Laboratory(연구실) → 매독 선별검사 명칭","c":1},{"id":1088,"a":"VRE","o":"vancomycin resistant Enterococcus","p":"반코마이신 리지스턴트 엔테로코커스","m":"반코마이신내성 장구균","t":"vancomycin resistant(반코마이신 내성)+Enterococcus(장구균) → MRSA와 비슷한 패턴의 내성균명","c":1},{"id":1089,"a":"WOB","o":"work of breath","p":"워크 오브 브레스","m":"호흡 부담","t":"work(일,부담)+of breath(호흡의) → 숨쉬기 위해 들어가는 노력의 정도","c":1},{"id":1090,"a":"PR","o":"pulse rate","p":"펄스 레이트","m":"맥박수","t":"주의! 바로 앞의 PR(억제대 적용)과 같은 약어, 여기서는 pulse(맥박)+rate(율)로 전혀 다른 뜻","c":1},{"id":1091,"a":"A.A.A.","o":"abdominal aortic aneurysm","p":"앱도미널 에이오틱 애뉴리즘","m":"복부 대동맥류","t":"abdominal(복부의)+aortic aneurysm(대동맥류) → 배 쪽 대동맥이 부풀어 오른 상태 ※ 원본 철자 aneurism도 같은 말이에요(aneurysm이 더 흔한 철자).","c":2,"alt":["abdominal aortic aneurism"]},{"id":1092,"a":"ACA","o":"Anterior Cerebral Artery","p":"앤테리어 세레브럴 아터리","m":"앞쪽 대뇌동맥","t":"anterior(앞쪽)+cerebral artery(대뇌동맥) → MCA·PCA와 함께 뇌동맥 3형제로 암기","c":2},{"id":1093,"a":"AIDS","o":"Acquired Immuno(Immune) Deficiency Syndrome","p":"에이즈","m":"후천성 면역결핍증","t":"이미 익숙한 '에이즈', acquired(후천적)+immune deficiency(면역결핍)","c":2},{"id":1094,"a":"ALL","o":"acute lymphocytic leukemia","p":"어큐트 림포사이틱 류케미아","m":"급성 림프구성 백혈병","t":"acute(급성)+lymphocytic(림프구성)+leukemia(백혈병) → CLL(만성)과 급성/만성으로 짝 암기 ※ 원본에는 lympocytic으로 오타가 있어 바로잡았어요.","c":2},{"id":1095,"a":"AMI","o":"acute myocardial infarction","p":"어큐트 마이오카디얼 인팔션","m":"급성심근경색","t":"acute(급성)+myocardial infarction(심근경색) → 응급 심장질환의 대표 ※ 원본에는 myocardiac으로 적혀 있지만 바른 표기는 myocardial이에요.","c":2},{"id":1096,"a":"AML","o":"acute myelogenous leukemia","p":"어큐트 마이얼라저너스 류케미아","m":"급성 골수성 백혈병","t":"acute(급성)+myelogenous(골수성)+leukemia(백혈병) → CML(만성)과 짝 암기","c":2},{"id":1097,"a":"APN","o":"acute pyelonephritis","p":"어큐트 파이얼로네프라이티스","m":"급성 신우신염","t":"acute(급성)+pyelonephritis(신우신염) → 신장 감염질환","c":2},{"id":1098,"a":"AR","o":"aortic valve regurgitation","p":"에이오틱 밸브 리거저테이션","m":"대동맥판 역류","t":"aortic valve(대동맥판막)+regurgitation(역류) → AS(협착)와 짝지어 암기","c":2},{"id":1099,"a":"ARDS","o":"adult respiratory distress syndrome","p":"애덜트 레스퍼러토리 디스트레스 신드롬","m":"성인 호흡장애 증후군","t":"adult(성인)+respiratory distress(호흡곤란)+syndrome(증후군) → 중증 급성 폐손상","c":2},{"id":1100,"a":"ARF","o":"acute renal failure","p":"어큐트 리널 페일리어","m":"급성 신부전","t":"acute(급성)+renal failure(신부전) → CRF(만성)과 짝 암기","c":2},{"id":1101,"a":"AS","o":"aortic stenosis","p":"에이오틱 스테노시스","m":"대동맥판 협착","t":"aortic(대동맥의)+stenosis(협착) → AR(역류)과 짝지어 암기","c":2},{"id":1102,"a":"ASD","o":"atrial septal defect","p":"에이트리얼 셉털 디펙트","m":"심방중격 결손","t":"atrial(심방의)+septal defect(중격결손) → 선천성 심장질환, VSD(심실중격)와 짝","c":2},{"id":1103,"a":"ASO","o":"Arteriosclerosis obliterans","p":"아테리오스클러로시스 어블리터런스","m":"동맥경화성 폐쇄","t":"Arteriosclerosis(동맥경화)+obliterans(폐쇄성의) → 말초동맥이 막히는 질환","c":2},{"id":1104,"a":"AVN","o":"avascular necrosis","p":"에이배스큘러 네크로시스","m":"무혈성 괴사","t":"avascular(혈액공급이 없는)+necrosis(괴사) → 혈류 차단으로 뼈조직이 죽는 상태","c":2},{"id":1105,"a":"AVR","o":"aortic valve replacement","p":"에이오틱 밸브 리플레이스먼트","m":"대동맥판막치환술","t":"aortic valve(대동맥판막)+replacement(교체) → 판막을 인공판막으로 바꾸는 수술","c":2},{"id":1106,"a":"CAD","o":"coronary artery disease","p":"코로너리 아터리 디지즈","m":"관상동맥질환","t":"coronary artery(관상동맥)+disease(질환) → 심장에 혈액을 공급하는 혈관의 질환","c":2},{"id":1107,"a":"CBD ca","o":"common bile duct ca.","p":"커먼 바일 덕트 카시노마","m":"총 담도암","t":"common bile duct(총담관)+ca(암, carcinoma) → 담즙이 지나가는 관의 암","c":2},{"id":1108,"a":"CGN","o":"chronic glomerulonephritis","p":"크로닉 글로메럴로네프라이티스","m":"만성 사구체염","t":"chronic(만성)+glomerulonephritis(사구체신염) → 신장 사구체의 만성 염증","c":2},{"id":1109,"a":"CHF","o":"chronic heart failure / congestive heart failure","p":"크로닉 하트 페일리어","m":"만성 심부전 / 울혈성 심부전","t":"chronic(만성) 또는 congestive(울혈성)+heart failure(심부전) → 두 표현 모두 같은 약어로 사용","c":2,"sp":1},{"id":1110,"a":"CLL","o":"chronic lymphocytic leukemia","p":"크로닉 림포사이틱 류케미아","m":"만성 림프구성 백혈병","t":"ALL(급성)의 만성 버전, chronic(만성)만 바뀐 것으로 세트 암기","c":2},{"id":1111,"a":"CML","o":"chronic myelogenous leukemia","p":"크로닉 마이얼라저너스 류케미아","m":"만성 골수성 백혈병","t":"AML(급성)의 만성 버전, 백혈병 4종(ALL/AML/CLL/CML) 세트로 암기","c":2},{"id":1112,"a":"COPD","o":"chronic obstructive pulmonary disease","p":"크로닉 옵스트럭티브 펄모너리 디지즈","m":"만성폐쇄성 폐질환","t":"chronic(만성)+obstructive(폐쇄성)+pulmonary disease(폐질환) → 흡연 관련 대표 만성폐질환","c":2},{"id":1113,"a":"CRF","o":"chronic renal failure","p":"크로닉 리널 페일리어","m":"만성 신부전","t":"ARF(급성)의 만성 버전, chronic만 바뀐 것으로 세트 암기","c":2},{"id":1114,"a":"CVA","o":"Cerebro-Vascular Accident","p":"세레브로 배스큘러 액시던트","m":"뇌졸중","t":"cerebro(뇌)+vascular(혈관)+accident(사고) → 뇌혈관 사고=뇌졸중","c":2},{"id":1115,"a":"DI","o":"Drug intoxication","p":"드러그 인톡시케이션","m":"중독","t":"Drug(약물)+intoxication(중독) → 약물중독","c":2},{"id":1116,"a":"DI","o":"diabetes insipidus","p":"다이어비티스 인시피더스","m":"요붕증","t":"주의! 바로 위 DI(약물중독)와 같은 약어지만 전혀 다른 뜻, diabetes(당뇨성 질환군의 하나)지만 당뇨병이주의! 바로 위 DI(약물중독)와 같은 약어지만 전혀 다른 뜻, diabetes(당뇨성 질환군의 하나)지만 당뇨병이 아닌 요붕증 ※ 원본에는 inspidus로 오타가 있어 insipidus로 바로잡았어요.","c":2},{"id":1117,"a":"DKA","o":"diabetic ketoacidosis","p":"다이어베틱 키토애시도시스","m":"당뇨병성 케톤산증","t":"diabetic(당뇨병의)+ketoacidosis(케톤산증) → 당뇨병의 급성 대사 합병증","c":2},{"id":1118,"a":"DT","o":"Tetanus","p":"테터너스","m":"파상풍 혼합 백신","t":"Diphtheria-Tetanus의 줄임으로 흔히 쓰이는 파상풍 관련 혼합백신 표기","c":2},{"id":1119,"a":"EDH","o":"epidural hemorrhage","p":"에피듀럴 헤머리지","m":"경막 외 출혈","t":"epidural(경막외)+hemorrhage(출혈) → 두개골과 경막 사이의 출혈","c":2},{"id":1120,"a":"ESRD","o":"end stage renal disease","p":"엔드 스테이지 리널 디지즈","m":"말기신질환","t":"end stage(말기)+renal disease(신장질환) → 투석/이식이 필요한 신부전 최종단계 ※ 원본에는 end state로 오타가 있어 end stage로 바로잡았어요.","c":2},{"id":1121,"a":"GB ca","o":"gall bladder ca.","p":"골 블래더 카시노마","m":"담낭암","t":"gall bladder(담낭)+ca(암) → 쓸개의 암","c":2},{"id":1122,"a":"HCC","o":"Hepato-Cellular Carcinoma","p":"헤파토셀룰러 카시노마","m":"간세포암","t":"Hepato(간)+Cellular(세포성)+Carcinoma(암종) → 가장 흔한 원발성 간암","c":2},{"id":1123,"a":"HIV","o":"Human Immunodeficiency Virus","p":"휴먼 이뮤노데피션시 바이러스","m":"인간면역결핍성바이러스","t":"human(인간)+immunodeficiency(면역결핍)+virus(바이러스) → AIDS를 일으키는 바이러스","c":2},{"id":1124,"a":"ICH","o":"Intracranial Hemorrhage","p":"인트라크레이니얼 헤머리지","m":"뇌내출혈","t":"intracranial(두개내의)+hemorrhage(출혈) → 뇌 안쪽의 출혈","c":2},{"id":1125,"a":"IHD stone","o":"intrahepatic bile duct stone","p":"인트라헤파틱 바일 덕트 스톤","m":"간내 담도 담석","t":"intrahepatic(간내의)+bile duct stone(담관결석) → 간 속 담관에 생긴 돌","c":2},{"id":1126,"a":"ILD","o":"Interstitial Lung Disease","p":"인터스티셜 렁 디지즈","m":"간질성 폐질환","t":"interstitial(간질의, 조직사이의)+lung disease(폐질환) → 폐조직 사이가 굳는 질환군","c":2},{"id":1127,"a":"IVH","o":"intraventricular hemorrhage","p":"인트라벤트리큘러 헤머리지","m":"뇌실내 출혈","t":"intraventricular(뇌실내의)+hemorrhage(출혈) → 뇌실 안쪽의 출혈","c":2},{"id":1128,"a":"LAD","o":"Left Anterior Descending coronary artery","p":"레프트 앤테리어 디센딩 코로너리 아터리","m":"좌전하행지 관상동맥","t":"Left(좌측)+Anterior Descending(앞으로 내려가는)+coronary artery(관상동맥) → 심근경색에서 가장Left(좌측)+Anterior Descending(앞으로 내려가는)+coronary artery(관상동맥) → 심근경색에서 가장 중요한 혈관","c":2},{"id":1129,"a":"LVH","o":"left ventricular hypertrophy","p":"레프트 벤트리큘러 하이퍼트로피","m":"좌심실 비대","t":"left ventricular(좌심실)+hypertrophy(비대) → 고혈압 등으로 좌심실이 두꺼워진 상태","c":2},{"id":1130,"a":"L/C","o":"liver cirrhosis","p":"리버 시로시스","m":"간경화","t":"liver(간)+cirrhosis(경화) → 간이 딱딱하게 굳는 질환","c":2},{"id":1131,"a":"MCA","o":"Middle Cerebral Artery","p":"미들 세레브럴 아터리","m":"중간대뇌동맥","t":"Middle(중간)+cerebral artery(대뇌동맥) → ACA·PCA와 뇌동맥 3형제로 암기","c":2},{"id":1132,"a":"MI","o":"myocardial infarction","p":"마이오카디얼 인팔션","m":"심근경색증","t":"myocardial(심근의)+infarction(경색) → AMI(급성)의 기본형 ※ 원본에는 myocardiac으로 적혀 있지만 바른 표기는 myocardial이에요.","c":2},{"id":1133,"a":"MR","o":"Mitral Regurgitation","p":"마이트럴 리거저테이션","m":"이첨판 역류","t":"Mitral(이첨판)+Regurgitation(역류) → MS(협착)와 짝지어 암기","c":2},{"id":1134,"a":"MR","o":"Mental Retardation","p":"멘탈 리타데이션","m":"정신지체","t":"주의! 바로 위 MR(이첨판 역류)과 같은 약어지만 전혀 다른 뜻, Mental(정신의)+Retardation(지체)","c":2},{"id":1135,"a":"MS","o":"Mitral Stenosis","p":"마이트럴 스테노시스","m":"이첨판 협착","t":"Mitral(이첨판)+Stenosis(협착) → MR(역류)과 짝지어 암기","c":2},{"id":1136,"a":"MS","o":"Multiple Sclerosis","p":"멀티플 스클러로시스","m":"다발성 경화증","t":"주의! 바로 위 MS(이첨판협착)와 같은 약어지만 전혀 다른 뜻, Multiple(다발성)+Sclerosis(경화증, 신경계주의! 바로 위 MS(이첨판협착)와 같은 약어지만 전혀 다른 뜻, Multiple(다발성)+Sclerosis(경화증, 신경계 질환)","c":2},{"id":1137,"a":"PCA","o":"Posterior Cerebral Artery","p":"포스테리어 세레브럴 아터리","m":"뒤쪽 대뇌동맥","t":"Posterior(뒤쪽)+cerebral artery(대뇌동맥) → ACA·MCA와 함께 뇌동맥 3형제로 암기","c":2},{"id":1138,"a":"RCA","o":"Right Coronary Artery","p":"라이트 코로너리 아터리","m":"우관상동맥","t":"Right(우측)+coronary artery(관상동맥) → LAD와 함께 심장 혈관 암기","c":2},{"id":1139,"a":"RVH","o":"right ventricular hypertrophy","p":"라이트 벤트리큘러 하이퍼트로피","m":"우심실 비대","t":"right ventricular(우심실)+hypertrophy(비대) → LVH(좌심실비대)와 짝지어 암기","c":2},{"id":1140,"a":"SAH","o":"Sub-Arachnoid Hemorrhage","p":"서브 어래크노이드 헤머리지","m":"지주막하출혈","t":"Sub(아래)+Arachnoid(지주막)+Hemorrhage(출혈) → 뇌를 감싸는 지주막 아래 출혈","c":2},{"id":1141,"a":"SDH","o":"Sub-Dural Hemorrhage","p":"서브 듀럴 헤머리지","m":"경뇌막하출혈(경막하출혈)","t":"Sub(아래)+Dural(경막의)+Hemorrhage(출혈) → EDH(경막외출혈)와 위치로 구분해서 암기","c":2},{"id":1142,"a":"SLE","o":"systemic lupus erythematosus","p":"시스테믹 루퍼스 에리씨마토서스","m":"전신성 홍반성 낭창","t":"systemic(전신성)+lupus erythematosus(홍반성 낭창) → 대표적 자가면역질환","c":2},{"id":1143,"a":"TA","o":"traffic accident","p":"트래픽 액시던트","m":"교통사고","t":"traffic(교통)+accident(사고) → 그대로 직역","c":2},{"id":1144,"a":"TR","o":"Tricuspid Regurgitation","p":"트라이커스피드 리거저테이션","m":"삼첨판 역류","t":"Tricuspid(삼첨판)+Regurgitation(역류) → TS(협착)와 짝지어 암기","c":2},{"id":1145,"a":"TS","o":"Tricuspid Stenosis","p":"트라이커스피드 스테노시스","m":"삼첨판 협착","t":"Tricuspid(삼첨판)+Stenosis(협착) → TR(역류)과 짝지어 암기","c":2},{"id":1146,"a":"VSD","o":"ventricular septal defect","p":"벤트리큘러 셉털 디펙트","m":"심실중격 결손","t":"ventricular(심실의)+septal defect(중격결손) → ASD(심방중격)와 짝지어 암기","c":2},{"id":1147,"a":"C.C","o":"chief complaint","p":"치프 컴플레인트","m":"주호소","t":"Chief(주된)+Complaint(불편감) → 환자가 가장 먼저 호소하는 증상","c":3},{"id":1148,"a":"Ex","o":"Examine","p":"이그잼","m":"검진","t":"Examine의 줄임, '검사하다, 진찰하다'는 뜻","c":3},{"id":1149,"a":"Dx","o":"dressing / Diagnosis","p":"드레싱, 다이어그노시스","m":"소독 /진단","t":"문맥에 따라 dressing(소독)과 diagnosis(진단) 두 가지로 쓰이니 주의","c":3,"sp":1},{"id":1150,"a":"Tx","o":"treatment","p":"트리트먼트","m":"치료","t":"Sx(증상)-Dx(진단)-Tx(치료) 세트로 함께 암기","c":3},{"id":1151,"a":"P.I.","o":"present illness","p":"프레즌트 일니스","m":"현병력","t":"present(현재의)+illness(질병) → 지금 앓고 있는 병의 경과","c":3},{"id":1152,"a":"Hx","o":"history","p":"히스토리","m":"병력","t":"history의 h+x, F/Hx·P/Hx·S/Hx 등 다양한 병력 용어의 기본형","c":3},{"id":1153,"a":"HBP/ HTN","o":"High Blood Pressure / Hypertension","p":"하이 블러드 프레셔, 하이퍼텐션","m":"고혈압","t":"High blood pressure(높은 혈압) 또는 Hypertension(고혈압)의 줄임, 같은 뜻 두 표기","c":3,"sp":1},{"id":1154,"a":"DM","o":"Diabetes Mellitus","p":"다이어비티스 멜리터스","m":"당뇨","t":"Diabetes Mellitus의 약자, 가장 흔히 쓰는 당뇨병 약어","c":3},{"id":1155,"a":"F/Hx","o":"family history","p":"패밀리 히스토리","m":"가족력","t":"family(가족)+history(병력) → 가족 중 질병 이력","c":3},{"id":1156,"a":"P/Hx","o":"past history","p":"패스트 히스토리","m":"과거력","t":"past(과거)+history(병력) → 환자 본인의 과거 질병 이력","c":3},{"id":1157,"a":"S/Hx","o":"social history","p":"소셜 히스토리","m":"사회력","t":"social(사회적인)+history(병력) → 흡연,음주,직업 등 사회적 배경","c":3},{"id":1158,"a":"P/E","o":"physical examination","p":"피지컬 이그재미네이션","m":"신체검진","t":"physical(신체의)+examination(검진) → 신체를 직접 진찰하는 것","c":3},{"id":1159,"a":"G/A","o":"general appearance","p":"제너럴 어피어런스","m":"일반모습","t":"general(전반적인)+appearance(외양) → 환자의 전반적인 겉모습 사정","c":3},{"id":1160,"a":"CNS","o":"central nervous system","p":"센트럴 너버스 시스템","m":"중추신경계","t":"Central(중추의)+Nervous System(신경계) → 뇌와 척수","c":3},{"id":1161,"a":"HEENT","o":"head, ears, eyes, nose, and throat","p":"헤드, 이어즈, 아이즈, 노즈, 스로트","m":"두부/귀/눈/코/인후","t":"head+ears+eyes+nose+throat의 앞글자를 딴 신체사정 범위","c":3},{"id":1162,"a":"MS","o":"mental status","p":"멘탈 스테이터스","m":"의식상태","t":"주의! 질환명 섹션의 MS(이첨판협착/다발성경화증)와 또 다른 뜻, 여기서는 mental(정신의)+status(상태)","c":3},{"id":1163,"a":"GCS","o":"Glasgow coma scale","p":"글래스고우 코마 스케일","m":"글라스고우 혼수 척도","t":"앞 섹션의 GCS(혼수척도)와 동일, 의식수준 평가의 표준 척도","c":3},{"id":1164,"a":"M/F","o":"mental function","p":"멘탈 펑션","m":"정신기능","t":"mental(정신의)+function(기능) → 인지·판단 등 정신 기능 사정","c":3},{"id":1165,"a":"LOC","o":"level of consciousness","p":"레벨 오브 컨셔스니스","m":"의식수준","t":"level(수준)+of consciousness(의식의) → 명료/기면/혼미 등 의식 단계","c":3},{"id":1166,"a":"PLR","o":"pupillary light reflex","p":"퓨필러리 라이트 리플렉스","m":"대광반사","t":"pupillary(동공의)+light reflex(빛반사) → 빛에 대한 동공의 반응 확인","c":3},{"id":1167,"a":"F/C","o":"fever / chill","p":"피버, 칠","m":"발열/오한","t":"fever(열)+chill(오한) → 감염 시 흔한 두 증상 조합","c":3},{"id":1168,"a":"C/S/R","o":"cough/ sputum / rhinorrhea","p":"코프, 스퓨텀, 라이노리아","m":"기침/객담/콧물","t":"cough(기침)+sputum(가래)+rhinorrhea(콧물) → 호흡기 증상 세트","c":3},{"id":1169,"a":"PNS","o":"Peripheral Nervous System","p":"퍼리퍼럴 너버스 시스템","m":"말초신경계","t":"Peripheral(말초의)+Nervous System(신경계) → CNS(중추신경계)와 짝지어 암기","c":3},{"id":1170,"a":"RHB s m̄","o":"regular heart beat without murmur","p":"레귤러 하트 비트 위다웃 머머","m":"심잡음이 없는 정상 심박동","t":"regular heart beat(규칙적 심박동)+s(without, ̄없이)+murmur(잡음) → 's'̄는 '없이'를 뜻하는 기호","c":3},{"id":1171,"a":"CBS s r̄","o":"clear breathing sounds without rale","p":"클리어 브리딩 사운즈 위다웃 레일","m":"맑은 호흡음(수포음 없는)","t":"clear breathing sounds(맑은 호흡음)+s(without)+rale(̄수포음) → 정상 호흡음 기록 표현","c":3},{"id":1172,"a":"G-I","o":"gastro-intestine","p":"가스트로 인테스틴","m":"위장계","t":"gastro(위)+intestine(장) → 위와 장을 합친 소화기계","c":3},{"id":1173,"a":"N/A/V/D/C","o":"nausea / anorexia / vomiting / diarrhea / constipation","p":"너지아, 애노렉시아, 보미팅, 다이어리아, 컨스티페이션","m":"오심/식욕부진/구토/설사/변비","t":"소화기 증상 5가지의 앞글자 조합, 순서대로 나열하며 암기","c":3},{"id":1174,"a":"NABS","o":"normal active bowel sounds","p":"노멀 액티브 바울 사운즈","m":"장음 정상","t":"normal(정상)+active(활발한)+bowel sounds(장음) → 청진 시 정상 장음 확인","c":3},{"id":1175,"a":"Td/rTd","o":"tenderness / rebound tenderness","p":"텐더니스, 리바운드 텐더니스","m":"압통/반사 압통","t":"tenderness(압통)+rebound(반동) → 누를 때 아픔과 뗄 때 더 아픈 반사압통","c":3},{"id":1176,"a":"Ext","o":"Extremity","p":"엑스트레미티","m":"사지","t":"Extremity의 줄임, 팔다리를 뜻하는 '사지'","c":3},{"id":1177,"a":"upper Ext / lower Ext","o":"upper extremity / lower extremity","p":"어퍼 엑스트레미티, 로워 엑스트레미티","m":"상지/하지","t":"upper(위쪽)+lower(아래쪽)+extremity(사지) → 팔(상지)과 다리(하지) 구분","c":3},{"id":1178,"a":"Fx","o":"fracture","p":"프랙처","m":"골절","t":"fracture의 F+x, Dx·Tx·Cx와 같은 x축약 패턴","c":3},{"id":1179,"a":"MMT","o":"manual muscle test","p":"매뉴얼 머슬 테스트","m":"도수 근력 검사","t":"manual(수동의, 손으로 하는)+muscle test(근력검사) → 기구 없이 손으로 하는 근력평가","c":3}]}]};
+</script>
+<script>
+(function () {
+  "use strict";
+  var DECKS = DATA.decks, ALLW = [], BYID = {}, DECK_OF = {}, CATS, WORDS, N, CUR;
+  DECKS.forEach(function (d) { d.words.forEach(function (w) { ALLW.push(w); BYID[w.id] = w; DECK_OF[w.id] = d; }); });
+  function setDeck(id) { CUR = DECKS.filter(function (d) { return d.id === id; })[0] || DECKS[0]; CATS = CUR.cats; WORDS = CUR.words; N = WORDS.length; }
+  var CAT_COLORS = ["#2E7DB5","#2F9E7A","#8A63C6","#D0504A","#E19A1B","#C9B01E","#6C7D8F","#2B9AAB","#3C9B5C","#B5558E","#D2742F","#7C8B2E","#7B8896"];
+
+  /* ---------- storage ---------- */
+  var KEY = "kn-voca-fund2-v1", store = null, storeOk = true;
+  var S = { w: {}, ui: { tab: "decks", deck: "fund2", scope: "all", front: "a", qn: 10, typo: true } };
+  try { store = window.localStorage; var raw = store.getItem(KEY); if (raw) { var p = JSON.parse(raw); if (p && p.w) { S.w = p.w; S.ui = Object.assign(S.ui, p.ui || {}); } } } catch (e) { storeOk = false; }
+  setDeck(S.ui.deck);
+  function save() { if (!storeOk) return; try { store.setItem(KEY, JSON.stringify(S)); } catch (e) { storeOk = false; } }
+  function rec(id) { var r = S.w[id]; if (!r) r = S.w[id] = { s: "", ok: 0, ng: 0, l: -1, st: 0 }; return r; }
+  function get(id) { return S.w[id] || { s: "", ok: 0, ng: 0, l: -1, st: 0 }; }
+
+  /* ---------- helpers ---------- */
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  function el(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    if (attrs) for (var k in attrs) { var v = attrs[k]; if (v == null || v === false) continue; if (k === "class") e.className = v; else if (k === "text") e.textContent = v; else if (k.slice(0, 2) === "on") e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? "" : v); }
+    (kids || []).forEach(function (c) { if (c == null) return; e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  var SVG_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7L12 16.6l-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg>';
+  function starBtn(id, onchange) {
+    var b = el("button", { class: "star", type: "button", "aria-pressed": String(!!get(id).st), "aria-label": "별표" });
+    b.innerHTML = SVG_STAR;
+    b.addEventListener("click", function (ev) { ev.stopPropagation(); var r = rec(id); r.st = r.st ? 0 : 1; save(); b.setAttribute("aria-pressed", String(!!r.st)); renderCounts(); if (onchange) onchange(); });
+    return b;
+  }
+  function catTag(w) { return el("span", { class: "tag" }, [el("i", { style: "background:" + CAT_COLORS[w.c % CAT_COLORS.length] }), DECK_OF[w.id].cats[w.c]]); }
+  function tipBox(w) { return el("div", { class: "tip" }, [el("b", { text: "암기 TIP" }), w.t]); }
+  function norm(s) { return String(s).toLowerCase().replace(/[^a-z0-9가-힣\s]/g, " ").replace(/\s+/g, " ").trim(); }
+  function flat(s) { return norm(s).replace(/\s/g, ""); }
+  function lev1(a, b) { if (a === b) return true; if (Math.abs(a.length - b.length) > 1) return false; var i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1); return a.length > b.length ? a.slice(i + 1) === b.slice(i) : b.slice(i + 1) === a.slice(i); }
+  function twins(w) { var k = w.a.toLowerCase(); return ALLW.filter(function (x) { return x.a.toLowerCase() === k && x.id !== w.id; }); }
+
+  /* ---------- 음성 (브라우저 내장 TTS) ---------- */
+  var TTS = ("speechSynthesis" in window) && typeof SpeechSynthesisUtterance !== "undefined", VOICE = null;
+  function pickVoice() { if (!TTS) return; var vs = []; try { vs = speechSynthesis.getVoices() || []; } catch (e) {} VOICE = vs.filter(function (v) { return /^en[-_]US/i.test(v.lang); })[0] || vs.filter(function (v) { return /^en/i.test(v.lang); })[0] || null; }
+  if (TTS) { pickVoice(); try { speechSynthesis.addEventListener("voiceschanged", pickVoice); } catch (e) {} }
+  function speakText(s) { if (!TTS) return; if (pl.on) plStop(); try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(String(s).replace(/\s*\/\s*/g, ", ").replace(/[()]/g, " ")); u.lang = "en-US"; if (VOICE) u.voice = VOICE; u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {} }
+  var SVG_SPK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+  function sayBtn(text) { if (!TTS) return null; var b = el("button", { class: "say", type: "button", "aria-label": "원어 발음 듣기" }); b.innerHTML = SVG_SPK; b.addEventListener("click", function (ev) { ev.stopPropagation(); speakText(text); }); return b; }
+
+  /* ---------- 목록 연속 듣기 ---------- */
+  var KO = null;
+  function pickKo() { try { var vs = speechSynthesis.getVoices() || []; KO = vs.filter(function (v) { return /^ko/i.test(v.lang); })[0] || null; } catch (e) {} }
+  if (TTS) { pickKo(); try { speechSynthesis.addEventListener("voiceschanged", pickKo); } catch (e) {} }
+  var pl = { on: false, order: "seq", rate: 0.9, ids: [], i: 0, cur: null, tok: 0, timer: null };
+  try { if (S.ui.plOrder) pl.order = S.ui.plOrder; if (S.ui.plRate) pl.rate = S.ui.plRate; } catch (e) {}
+  function abbrSpeech(a) {
+    return a.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ").replace(/[\/,().]/g, " ").split(/\s+/).filter(Boolean).map(function (x) {
+      var vow = (x.match(/[aeiou]/gi) || []).length;
+      return (x.length <= 4 || (x.length <= 5 && vow <= 1) || /\d/.test(x)) ? x.split("").join(" ") : x;
+    }).join(", ");
+  }
+  function utter(text, lang, voice, done) {
+    var u = new SpeechSynthesisUtterance(text), tk = pl.tok, fired = false, g;
+    u.lang = lang; if (voice) u.voice = voice; u.rate = pl.rate;
+    function fin() { if (fired) return; fired = true; clearTimeout(g); if (tk === pl.tok && pl.on) done(); }
+    u.onend = fin; u.onerror = fin; g = setTimeout(fin, 5000 + text.length * 300 / pl.rate);
+    speechSynthesis.speak(u);
+  }
+  function plSay(w) {
+    pl.cur = w.id; plUI();
+    var steps = [];
+    if (!w.na) steps.push([abbrSpeech(w.a), "en-US", VOICE]);
+    steps.push([w.o.replace(/\s*\/\s*/g, ", ").replace(/[()]/g, " "), "en-US", VOICE]);
+    steps.push([w.m.replace(/\s*\/\s*/g, ", "), "ko-KR", KO]);
+    var k = 0, tk = pl.tok;
+    (function next() {
+      if (!pl.on || tk !== pl.tok) return;
+      if (k >= steps.length) { pl.timer = setTimeout(plNext, 800); return; }
+      var s = steps[k++]; utter(s[0], s[1], s[2], function () { pl.timer = setTimeout(next, 300); });
+    })();
+  }
+  function plNext() { if (!pl.on) return; pl.i++; if (pl.i >= pl.ids.length) { pl.i = 0; if (pl.order === "rand") pl.ids = shuffle(pl.ids); } plSay(BYID[pl.ids[pl.i]]); }
+  function plStart(ids, fromId) {
+    if (!TTS || !ids.length) return;
+    try { speechSynthesis.cancel(); } catch (e) {}
+    pl.tok++; clearTimeout(pl.timer); pl.on = true;
+    pl.ids = pl.order === "rand" ? shuffle(ids) : ids.slice();
+    pl.i = fromId != null && pl.ids.indexOf(fromId) >= 0 ? pl.ids.indexOf(fromId) : 0;
+    plSay(BYID[pl.ids[pl.i]]);
+  }
+  function plStop() { pl.on = false; pl.tok++; clearTimeout(pl.timer); try { speechSynthesis.cancel(); } catch (e) {} pl.cur = null; plUI(); }
+  function plJump(d) { if (!pl.on) return; pl.tok++; clearTimeout(pl.timer); try { speechSynthesis.cancel(); } catch (e) {} pl.i = (pl.i + d + pl.ids.length) % pl.ids.length; plSay(BYID[pl.ids[pl.i]]); }
+  function plUI() {
+    var now = document.getElementById("pl-now"), btn = document.getElementById("pl-btn"), bar = document.getElementById("player");
+    if (bar) bar.classList.toggle("on", pl.on);
+    if (btn) { btn.textContent = pl.on ? "■ 정지" : "▶ 재생"; btn.setAttribute("aria-pressed", String(pl.on)); }
+    if (now) { var w = pl.cur && BYID[pl.cur]; now.textContent = w ? (pl.i + 1) + "/" + pl.ids.length + " · " + w.a + " · " + w.m : "약어 → 원어 → 뜻 순서로 반복해서 읽어요"; }
+    Array.prototype.forEach.call(document.querySelectorAll("#v-list .item.playing"), function (x) { x.classList.remove("playing"); });
+    if (pl.on && pl.cur) {
+      var it = document.querySelector('#v-list .item[data-id="' + pl.cur + '"]');
+      if (it) { it.classList.add("playing"); if (S.ui.plFollow !== false && !document.getElementById("v-list").hidden) { try { it.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) { it.scrollIntoView(); } } }
+    }
+  }
+
+  /* ---------- status model ---------- */
+  function apply(id, kind, val) {
+    var r = rec(id);
+    if (kind === "card") { r.s = val; }
+    else if (kind === "set") { r.s = val; }
+    else {
+      var ok = !!val;
+      if (ok) { r.ok++; r.l = 1; } else { r.ng++; r.l = 0; }
+      if (kind === "dict") r.s = ok ? "k" : "x";
+      else r.s = ok ? ((r.s === "k" || r.s === "u") ? "k" : "u") : "x";
+    }
+    save(); renderCounts();
+  }
+  function counts() { var c = { k: 0, u: 0, x: 0, n: 0, star: 0, wrong: 0, right: 0, todo: 0 };
+    WORDS.forEach(function (w) { var r = get(w.id); if (r.s === "k") c.k++; else if (r.s === "u") c.u++; else if (r.s === "x") c.x++; else c.n++; if (r.st) c.star++; if (r.l === 0) c.wrong++; if (r.l === 1) c.right++; if (r.s !== "k") c.todo++; });
+    return c; }
+  function renderCounts() {
+    var c = counts(), pct = Math.round(c.k / N * 100);
+    $("#pct").textContent = pct + "%"; $("#brand-t").textContent = CUR.name;
+    var bar = $("#pbar"); bar.setAttribute("aria-valuenow", pct);
+    var f = bar.children; f[0].style.width = (c.k / N * 100) + "%"; f[1].style.width = (c.u / N * 100) + "%"; f[2].style.width = (c.x / N * 100) + "%";
+    var lg = $("#legend"); lg.innerHTML = "";
+    [["k", "외웠어요", c.k], ["u", "헷갈려요", c.u], ["x", "모르겠어요", c.x], ["n", "미학습", c.n]].forEach(function (a) { lg.appendChild(el("span", null, [el("i", { class: "dot " + a[0] }), a[1] + " ", el("b", { text: String(a[2]) })])); });
+    scopeCounts = c;
+  }
+  var scopeCounts = null;
+
+  /* ---------- scope (shared) ---------- */
+  var SCOPES = [["all", "전체"], ["star", "★ 별표"], ["todo", "못 외운 것"], ["wrong", "틀린 것"]];
+  function inScope(w, sc) { var r = get(w.id); if (sc === "all") return true; if (sc === "star") return !!r.st; if (sc === "todo") return r.s !== "k"; if (sc === "wrong") return r.l === 0; return true; }
+  function scopeIds(sc) { return WORDS.filter(function (w) { return inScope(w, sc); }).map(function (w) { return w.id; }); }
+  function scopeBar(onchange) {
+    var c = scopeCounts || counts(), n = { all: N, star: c.star, todo: c.todo, wrong: c.wrong };
+    var wrap = el("div", { class: "chips", role: "group", "aria-label": "학습 범위" });
+    SCOPES.forEach(function (s) { wrap.appendChild(el("button", { class: "chip", type: "button", "aria-pressed": String(S.ui.scope === s[0]), onclick: function () { S.ui.scope = s[0]; save(); onchange(); } }, [s[1], el("small", { text: String(n[s[0]]) })])); });
+    return wrap;
+  }
+  function emptyScope(msg) { return el("div", { class: "empty" }, [el("strong", { text: "이 범위에 해당하는 단어가 없어요" }), el("p", { text: msg || "다른 범위를 선택해 보세요." })]); }
+
+  /* ================= 1. CARDS ================= */
+  var V = {}, cs = null;
+  function cardsStart(ids) { cs = { q: shuffle(ids || scopeIds(S.ui.scope)), i: 0, flipped: false, res: { k: [], u: [], x: [] } }; }
+  var FRONT = [["a", "약어"], ["m", "뜻"], ["o", "원어"]];
+  V.cards = function () {
+    var root = $("#v-cards"); root.innerHTML = "";
+    if (!cs) cardsStart();
+    root.appendChild(scopeBar(function () { cardsStart(); V.cards(); }));
+    var opts = el("div", { class: "opts" }, [el("span", { class: "bar-label", style: "margin:0", text: "앞면" })]);
+    var seg = el("div", { class: "seg", role: "group", "aria-label": "카드 앞면" });
+    FRONT.forEach(function (f) { seg.appendChild(el("button", { type: "button", "aria-pressed": String(S.ui.front === f[0]), onclick: function () { S.ui.front = f[0]; save(); cs.flipped = false; V.cards(); } , text: f[1] })); });
+    opts.appendChild(seg); if (TTS) opts.appendChild(el("label", null, [el("input", { type: "checkbox", checked: S.ui.auto ? "checked" : null, onchange: function (e) { S.ui.auto = e.target.checked; save(); } }), "뒤집으면 원어 자동 읽기"])); root.appendChild(opts);
+    if (!cs.q.length) { root.appendChild(emptyScope()); return; }
+    if (cs.i >= cs.q.length) { cardsSummary(root); return; }
+    var w = BYID[cs.q[cs.i]];
+    root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: (cs.i + 1) + " / " + cs.q.length }), el("span", { style: "display:flex;align-items:center;gap:2px" }, [sayBtn(w.o), starBtn(w.id)])]));
+    root.appendChild(el("div", { class: "meter", "aria-hidden": "true" }, [el("i", { style: "width:" + (cs.i / cs.q.length * 100) + "%" })]));
+    var fr = S.ui.front, frontMid;
+    if (fr === "a") frontMid = el("div", { class: "big-abbr", text: w.a });
+    else if (fr === "m") frontMid = el("div", { class: "big-text", text: w.m });
+    else frontMid = el("div", { class: "big-origin", text: w.o });
+    var front = el("div", { class: "face front" }, [el("div", { class: "head" }, [catTag(w)]), el("div", { class: "mid" }, [frontMid]), el("div", { class: "hint", text: "탭해서 뒤집기" })]);
+    var back = el("div", { class: "face back" }, [
+      el("div", { class: "head" }, [catTag(w)]),
+      el("div", { style: "flex:1;padding-top:8px" }, [
+        el("div", { class: "abbr-s", text: w.a }),
+        el("div", { class: "origin", text: w.o }), el("div", { class: "pron", text: "[" + w.p + "]" }),
+        el("div", { class: "mean", text: w.m }), tipBox(w)])]);
+    var card = el("button", { class: "card", type: "button", "data-flipped": String(cs.flipped), "aria-label": "카드 뒤집기", onclick: function () { cs.flipped = !cs.flipped; card.setAttribute("data-flipped", String(cs.flipped)); judgeEnable(); if (cs.flipped && S.ui.auto) speakText(w.o); } }, [front, back]);
+    root.appendChild(el("div", { class: "scene" }, [card]));
+    var jh = el("p", { class: "judge-hint" });
+    var judge = el("div", { class: "judge" });
+    [["k", "외웠어요"], ["u", "헷갈려요"], ["x", "모르겠어요"]].forEach(function (b) { judge.appendChild(el("button", { class: "btn " + b[0], type: "button", "data-j": b[0], text: b[1], onclick: function () { cardMark(b[0]); } })); });
+    function judgeEnable() { var on = cs.flipped; Array.prototype.forEach.call(judge.children, function (b) { b.disabled = !on; }); jh.textContent = on ? "" : "카드를 눌러 답을 확인한 뒤 체크하세요"; }
+    root.appendChild(jh); root.appendChild(judge); judgeEnable();
+    root.appendChild(el("div", { style: "text-align:center;margin-top:6px" }, [el("button", { class: "btn ghost", type: "button", text: "건너뛰기", onclick: function () { if (cs.q.length - cs.i > 1) { cs.q.push(cs.q.splice(cs.i, 1)[0]); cs.flipped = false; V.cards(); } } })]));
+  };
+  function cardMark(j) { if (!cs.flipped) return; var id = cs.q[cs.i]; apply(id, "card", j); cs.res[j].push(id); cs.i++; cs.flipped = false; V.cards(); }
+  function cardsSummary(root) {
+    var r = cs.res, redo = r.u.concat(r.x);
+    root.appendChild(el("div", { class: "summary" }, [el("h2", { text: "이번 라운드 끝!" }), el("div", { class: "count", text: cs.q.length + "장 학습" }),
+      el("div", { class: "stat3" }, [el("div", { class: "k" }, [el("b", { text: String(r.k.length) }), "외웠어요"]), el("div", { class: "u" }, [el("b", { text: String(r.u.length) }), "헷갈려요"]), el("div", { class: "x" }, [el("b", { text: String(r.x.length) }), "모르겠어요"])]),
+      el("div", { class: "actions" }, [
+        redo.length ? el("button", { class: "btn primary", type: "button", text: "헷갈린 것 + 모르는 것 다시 (" + redo.length + ")", onclick: function () { cardsStart(redo); V.cards(); } }) : null,
+        el("button", { class: "btn", type: "button", text: "이 범위 처음부터 다시", onclick: function () { cardsStart(); V.cards(); } })])]));
+  }
+
+  /* ================= 2. MULTIPLE CHOICE ================= */
+  var qs = null;
+  var KINDS = { A: { q: "o", ans: ["m", "a"], label: "원어 → 뜻 + 약어" }, B: { q: "m", ans: ["o", "a"], label: "뜻 → 원어 + 약어" }, C: { q: "a", ans: ["m", "o"], label: "약어 → 뜻 + 원어" } };
+  function quizStart(ids) {
+    var pool = shuffle(ids || scopeIds(S.ui.scope));
+    var n = S.ui.qn === 0 ? pool.length : Math.min(S.ui.qn, pool.length);
+    qs = { q: pool.slice(0, n).map(makeQ), i: 0, picked: -1, score: 0, wrong: [] };
+  }
+  function makeQ(id) {
+    var w = BYID[id], dw = DECK_OF[id].words, kinds = (twins(w).length || w.na) ? ["A", "B"] : ["A", "B", "C"], kind = pick(kinds), K = KINDS[kind];
+    function ok(x) { return x.id !== w.id && x.a.toLowerCase() !== w.a.toLowerCase() && x.m !== w.m && x.o !== w.o; }
+    var same = shuffle(dw.filter(function (x) { return ok(x) && x.c === w.c; })), other = shuffle(dw.filter(function (x) { return ok(x) && x.c !== w.c; }));
+    var ds = [], seen = {};
+    seen[K.ans.map(function (f) { return w[f]; }).join("|")] = 1;
+    same.concat(other).forEach(function (x) { if (ds.length >= 3) return; var key = K.ans.map(function (f) { return x[f]; }).join("|"); if (seen[key]) return; seen[key] = 1; ds.push(x); });
+    var opts = shuffle([w].concat(ds));
+    return { id: id, kind: kind, opts: opts.map(function (x) { return x.id; }), ans: opts.indexOf(w) };
+  }
+  function fieldNode(f, cls, text) { return el("div", { class: cls + (f === "a" ? " mono" : "") , text: text }); }
+  V.quiz = function () {
+    var root = $("#v-quiz"); root.innerHTML = "";
+    if (!qs) quizStart();
+    root.appendChild(scopeBar(function () { quizStart(); V.quiz(); }));
+    var opts = el("div", { class: "opts" }, [el("span", { class: "bar-label", style: "margin:0", text: "문항 수" })]);
+    var seg = el("div", { class: "seg", role: "group", "aria-label": "문항 수" });
+    [[10, "10"], [20, "20"], [0, "전체"]].forEach(function (f) { seg.appendChild(el("button", { type: "button", "aria-pressed": String(S.ui.qn === f[0]), text: f[1], onclick: function () { S.ui.qn = f[0]; save(); quizStart(); V.quiz(); } })); });
+    opts.appendChild(seg); root.appendChild(opts);
+    if (!qs.q.length) { root.appendChild(emptyScope()); return; }
+    if (qs.i >= qs.q.length) { quizSummary(root); return; }
+    var q = qs.q[qs.i], w = BYID[q.id], K = KINDS[q.kind], done = qs.picked >= 0;
+    root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: "문제 " + (qs.i + 1) + " / " + qs.q.length + " · 정답 " + qs.score }), starBtn(w.id)]));
+    root.appendChild(el("div", { class: "meter", "aria-hidden": "true" }, [el("i", { style: "width:" + (qs.i / qs.q.length * 100) + "%" })]));
+    var prompt = K.q === "a" ? el("div", { class: "big-abbr", text: w.a }) : K.q === "m" ? el("div", { class: "big-text", text: w.m }) : el("div", { class: "big-origin", text: w.o });
+    root.appendChild(el("div", { class: "q-card" }, [el("span", { class: "q-kind", text: K.label }), el("div", { class: "q-prompt" }, [prompt])]));
+    var ch = el("div", { class: "choices", role: "group", "aria-label": "보기" });
+    q.opts.forEach(function (oid, idx) {
+      var x = BYID[oid], cls = "choice";
+      if (done) { if (idx === q.ans) cls += " right"; else if (idx === qs.picked) cls += " wrong"; else cls += " dim"; }
+      var b = el("button", { class: cls, type: "button", disabled: done, onclick: function () { quizPick(idx); } }, [el("span", { class: "n", text: String(idx + 1) }), el("div", null, [fieldNode(K.ans[0], "l1", x[K.ans[0]]), fieldNode(K.ans[1], "l2", x[K.ans[1]])])]);
+      ch.appendChild(b);
+    });
+    root.appendChild(ch);
+    if (done) {
+      var good = qs.picked === q.ans;
+      root.appendChild(el("div", { class: "feedback", "aria-live": "polite" }, [
+        el("div", { class: "verdict " + (good ? "ok" : "no"), text: good ? "정답이에요!" : "아쉬워요, 정답은 " + (q.ans + 1) + "번" }),
+        el("div", { class: "full" }, [el("span", { class: "a", text: w.a }), "  " + w.o + " [" + w.p + "] · " + w.m, sayBtn(w.o)]), tipBox(w)]));
+      root.appendChild(el("button", { class: "btn primary", type: "button", style: "width:100%", text: qs.i + 1 >= qs.q.length ? "결과 보기" : "다음 문제", onclick: function () { qs.i++; qs.picked = -1; V.quiz(); } }));
+    }
+  };
+  function quizPick(idx) { if (qs.picked >= 0) return; var q = qs.q[qs.i], good = idx === q.ans; qs.picked = idx; if (good) qs.score++; else qs.wrong.push(q.id); apply(q.id, "mc", good); V.quiz(); }
+  function quizSummary(root) {
+    var n = qs.q.length, uniq = qs.wrong.filter(function (x, i, a) { return a.indexOf(x) === i; });
+    var box = el("div", { class: "summary" }, [el("h2", { text: "객관식 결과" }), el("div", { class: "score", text: qs.score + " / " + n }), el("div", { class: "count", text: "정답률 " + Math.round(qs.score / n * 100) + "%" })]);
+    if (uniq.length) { var wl = el("div", { class: "wrong-list" }); uniq.forEach(function (id) { var w = BYID[id]; wl.appendChild(el("div", { class: "w" }, [el("span", { class: "a", text: w.a }), el("div", { class: "m", text: w.o + " · " + w.m })])); }); box.appendChild(wl); }
+    box.appendChild(el("div", { class: "actions" }, [uniq.length ? el("button", { class: "btn primary", type: "button", text: "틀린 것만 다시 (" + uniq.length + ")", onclick: function () { quizStart(uniq); V.quiz(); } }) : null, el("button", { class: "btn", type: "button", text: "새로 시작", onclick: function () { quizStart(); V.quiz(); } })]));
+    root.appendChild(box);
+  }
+
+  /* ================= 3. DICTATION ================= */
+  var ds = null;
+  function writeStart(ids) { ds = { q: shuffle(ids || scopeIds(S.ui.scope)), i: 0, state: "ask", hint: false, val: "", ok: 0, wrong: [], note: "" }; }
+  function accepted(w) {
+    var list = [w].concat(twins(w)), set = {};
+    list.forEach(function (x) {
+      var o = x.o, forms = [o, o.replace(/\([^)]*\)/g, " ")];
+      (x.alt || []).forEach(function (a) { forms.push(a, a.replace(/\([^)]*\)/g, " ")); });
+      if (x.sp) o.replace(/\([^)]*\)/g, " ").split(/[,\/]/).forEach(function (p) { forms.push(p); });
+      forms.forEach(function (f) { var k = flat(f); if (k) set[k] = 1; });
+    });
+    return Object.keys(set);
+  }
+  function grade(w, input) {
+    var k = flat(input); if (!k) return { ok: false, note: "" };
+    var acc = accepted(w); if (acc.indexOf(k) >= 0) return { ok: true, note: "" };
+    if (S.ui.typo && k.length >= 10) for (var i = 0; i < acc.length; i++) if (acc[i].length >= 10 && lev1(k, acc[i])) return { ok: true, note: "철자 한 글자가 달라요. 정답 철자를 확인하세요." };
+    return { ok: false, note: "" };
+  }
+  V.write = function () {
+    var root = $("#v-write"); root.innerHTML = "";
+    if (!ds) writeStart();
+    root.appendChild(scopeBar(function () { writeStart(); V.write(); }));
+    var opts = el("div", { class: "opts" }, [el("label", null, [el("input", { type: "checkbox", id: "typo", checked: S.ui.typo ? "checked" : null, onchange: function (e) { S.ui.typo = e.target.checked; save(); } }), "긴 단어는 한 글자 오타 허용"])]);
+    root.appendChild(opts);
+    if (!ds.q.length) { root.appendChild(emptyScope()); return; }
+    if (ds.i >= ds.q.length) { writeSummary(root); return; }
+    var w = BYID[ds.q[ds.i]], tw = twins(w), done = ds.state !== "ask";
+    root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: (ds.i + 1) + " / " + ds.q.length + " · 정답 " + ds.ok }), starBtn(w.id)]));
+    root.appendChild(el("div", { class: "meter", "aria-hidden": "true" }, [el("i", { style: "width:" + (ds.i / ds.q.length * 100) + "%" })]));
+    root.appendChild(el("div", { class: "dict-card" }, [el("div", { class: "head" }, [catTag(w)]), el("div", { class: "mid" }, [w.na ? el("div", { class: "big-text", text: w.m }) : el("div", { class: "big-abbr", text: w.a })]),
+      el("div", { class: "hint-line" }, [w.na ? "약어가 없는 용어예요 · 뜻을 보고 원어를 입력하세요" : (ds.hint || done) ? "뜻: " + w.m : el("button", { class: "btn ghost", type: "button", text: "힌트: 뜻 보기", onclick: function () { ds.hint = true; V.write(); } })])]));
+    var inp = el("input", { id: "ans", type: "text", lang: "en", inputmode: "text", enterkeyhint: "done", autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false", placeholder: "원어(영문)를 입력하세요", "aria-label": "원어 입력", disabled: done });
+    inp.value = ds.val; inp.addEventListener("input", function () { ds.val = inp.value; });
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); if (ds.state === "ask") writeSubmit(); else writeNext(); } });
+    var field = el("div", { class: "field" + (ds.state === "ok" ? " ok" : ds.state === "no" ? " no" : "") }, [inp, done ? null : el("button", { class: "btn primary", type: "button", text: "채점", onclick: writeSubmit })]);
+    root.appendChild(field);
+    if (!done) { root.appendChild(el("div", { class: "dict-actions" }, [el("button", { class: "btn ghost", type: "button", text: "모르겠어요 (정답 보기)", onclick: function () { writeFinish(false, "", true); } }), tw.length ? el("span", { class: "note", text: "같은 약어가 " + (tw.length + 1) + "개 있어요" }) : null])); setTimeout(function () { try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); } }, 30); }
+    else {
+      root.appendChild(el("div", { class: "feedback", "aria-live": "polite" }, [
+        el("div", { class: "verdict " + (ds.state === "ok" ? "ok" : "no"), text: ds.state === "ok" ? "정답이에요!" : "틀렸어요" }),
+        ds.note ? el("div", { class: "note", text: ds.note }) : null,
+        el("div", { class: "full" }, ["정답: ", el("b", { text: w.o }), "  [" + w.p + "]", sayBtn(w.o)]),
+        tw.length ? el("div", { class: "note", style: "margin-bottom:8px", text: "같은 약어 " + w.a + ": " + [w].concat(tw).map(function (x) { return x.o + "(" + x.m + ")"; }).join(" / ") }) : null,
+        tipBox(w)]));
+      root.appendChild(el("button", { class: "btn primary", id: "nextbtn", type: "button", style: "width:100%", text: ds.i + 1 >= ds.q.length ? "결과 보기" : "다음", onclick: writeNext }));
+    }
+  };
+  function writeSubmit() { var w = BYID[ds.q[ds.i]]; if (!ds.val.trim()) return; var g = grade(w, ds.val); writeFinish(g.ok, g.note, false); }
+  function writeFinish(ok, note) { var id = ds.q[ds.i]; ds.state = ok ? "ok" : "no"; ds.note = note || ""; if (ok) ds.ok++; else ds.wrong.push(id); apply(id, "dict", ok); V.write(); var nb = $("#nextbtn"); if (nb) nb.focus({ preventScroll: true }); }
+  function writeNext() { ds.i++; ds.state = "ask"; ds.hint = false; ds.val = ""; ds.note = ""; V.write(); }
+  function writeSummary(root) {
+    var n = ds.q.length, uniq = ds.wrong.filter(function (x, i, a) { return a.indexOf(x) === i; });
+    var box = el("div", { class: "summary" }, [el("h2", { text: "받아쓰기 결과" }), el("div", { class: "score", text: ds.ok + " / " + n }), el("div", { class: "count", text: "정답률 " + Math.round(ds.ok / n * 100) + "%" })]);
+    if (uniq.length) { var wl = el("div", { class: "wrong-list" }); uniq.forEach(function (id) { var w = BYID[id]; wl.appendChild(el("div", { class: "w" }, [el("span", { class: "a", text: w.a }), el("div", { class: "m", text: w.o + " · " + w.m })])); }); box.appendChild(wl); }
+    box.appendChild(el("div", { class: "actions" }, [uniq.length ? el("button", { class: "btn primary", type: "button", text: "틀린 것만 다시 (" + uniq.length + ")", onclick: function () { writeStart(uniq); V.write(); } }) : null, el("button", { class: "btn", type: "button", text: "새로 시작", onclick: function () { writeStart(); V.write(); } })]));
+    root.appendChild(box);
+  }
+
+  /* ================= 4. LIST ================= */
+  var LF = [["all", "전체"], ["star", "★ 별표"], ["right", "맞은 것"], ["wrong", "틀린 것"], ["k", "외웠어요"], ["u", "헷갈려요"], ["x", "모르겠어요"], ["n", "미학습"]];
+  var ls = { q: "", f: "all", cat: "-1", sort: "cat", open: {}, confirm: false };
+  function listMatch(w) {
+    var r = get(w.id), f = ls.f;
+    if (f === "star" && !r.st) return false; if (f === "right" && r.l !== 1) return false; if (f === "wrong" && r.l !== 0) return false;
+    if (f === "k" && r.s !== "k") return false; if (f === "u" && r.s !== "u") return false; if (f === "x" && r.s !== "x") return false; if (f === "n" && r.s) return false;
+    if (ls.cat !== "-1" && String(w.c) !== ls.cat) return false;
+    if (ls.q) { var q = flat(ls.q), hay = flat(w.a + w.o + w.m + w.p + w.t + CATS[w.c]); if (hay.indexOf(q) < 0 && (w.a + w.o + w.m + w.t).toLowerCase().indexOf(ls.q.toLowerCase().trim()) < 0) return false; }
+    return true;
+  }
+  V.list = function () {
+    var root = $("#v-list"), keepFocus = document.activeElement && document.activeElement.id === "q", pos = keepFocus ? document.activeElement.selectionStart : 0;
+    root.innerHTML = ""; var c = scopeCounts || counts();
+    var si = el("input", { id: "q", class: "search", type: "search", placeholder: "약어·원어·뜻·발음·팁 검색", autocomplete: "off", "aria-label": "검색", value: ls.q });
+    si.addEventListener("input", function () { ls.q = si.value; V.list(); });
+    root.appendChild(si);
+    var nmap = { all: N, star: c.star, right: c.right, wrong: c.wrong, k: c.k, u: c.u, x: c.x, n: c.n };
+    var chips = el("div", { class: "chips", role: "group", "aria-label": "필터" });
+    LF.forEach(function (f) { chips.appendChild(el("button", { class: "chip", type: "button", "aria-pressed": String(ls.f === f[0]), onclick: function () { ls.f = f[0]; V.list(); } }, [f[1], el("small", { text: String(nmap[f[0]]) })])); });
+    root.appendChild(chips);
+    var sel = el("select", { class: "sel", "aria-label": "분야", onchange: function (e) { ls.cat = e.target.value; V.list(); } }, [el("option", { value: "-1", text: "모든 분야" })].concat(CATS.map(function (t, i) { return el("option", { value: String(i), text: t, selected: ls.cat === String(i) ? "selected" : null }); })));
+    var seg = el("div", { class: "seg", role: "group", "aria-label": "정렬" }); [["cat", "분야별"], ["abc", "알파벳순"]].forEach(function (s) { seg.appendChild(el("button", { type: "button", "aria-pressed": String(ls.sort === s[0]), text: s[1], onclick: function () { ls.sort = s[0]; V.list(); } })); });
+    root.appendChild(el("div", { class: "opts" }, [sel, seg]));
+    var items = WORDS.filter(listMatch);
+    root.appendChild(el("div", { class: "count", style: "margin-bottom:4px", text: N + "개 중 " + items.length + "개" }));
+    if (TTS) {
+      var listOrder = function () { var it = WORDS.filter(listMatch); if (ls.sort === "abc") it = it.slice().sort(function (a, b) { return a.a.toLowerCase().localeCompare(b.a.toLowerCase()); }); return it.map(function (w) { return w.id; }); };
+      root.appendChild(el("div", { class: "pl-set" }, [
+        segOf("재생 순서", [["seq", "정방향"], ["rand", "랜덤"]], pl.order, function (v) { pl.order = v; S.ui.plOrder = v; save(); if (pl.on) plStart(listOrder(), pl.cur); V.list(); }),
+        segOf("속도", [[0.7, "느리게"], [0.9, "보통"], [1.1, "빠르게"]], pl.rate, function (v) { pl.rate = v; S.ui.plRate = v; save(); V.list(); }),
+        el("div", { class: "opts" }, [el("label", null, [el("input", { type: "checkbox", checked: S.ui.plFollow !== false ? "checked" : null, onchange: function (e) { S.ui.plFollow = e.target.checked; save(); } }), "읽는 단어로 화면 따라가기"])]),
+        el("p", { class: "note", style: "margin:0 0 8px", text: "지금 보이는 목록(검색·필터·분야 적용)을 약어 → 원어 → 뜻 순서로 끝없이 반복해요. 단어를 누른 상태에서 재생하면 그 단어부터 시작해요." })]));
+      root.appendChild(el("div", { class: "player" + (pl.on ? " on" : ""), id: "player" }, [el("div", { class: "player-in" }, [
+        el("div", { class: "pl-now", id: "pl-now", "aria-live": "polite" }),
+        el("button", { class: "btn pl-s", type: "button", "aria-label": "이전 단어", text: "◀", onclick: function () { plJump(-1); } }),
+        el("button", { class: "btn primary pl-main", id: "pl-btn", type: "button", onclick: function () { if (pl.on) { plStop(); return; } var ids = listOrder(), open = Object.keys(ls.open).filter(function (k) { return ls.open[k]; }).map(Number).filter(function (k) { return ids.indexOf(k) >= 0; }); plStart(ids, open.length ? open[open.length - 1] : null); } }),
+        el("button", { class: "btn pl-s", type: "button", "aria-label": "다음 단어", text: "▶", onclick: function () { plJump(1); } })])]));
+    }
+    if (!items.length) root.appendChild(el("div", { class: "empty" }, [el("strong", { text: "조건에 맞는 단어가 없어요" }), el("p", { text: "검색어나 필터를 바꿔 보세요." })]));
+    function row(w) {
+      var r = get(w.id), open = !!ls.open[w.id];
+      var more = null;
+      if (open) {
+        more = el("div", { class: "item-more" }, [el("div", { class: "origin say-row" }, [el("span", { text: w.o }), sayBtn(w.o)]), el("div", { class: "pron", text: "[" + w.p + "]" }), tipBox(w),
+          el("div", { class: "stat-line", text: "맞은 횟수 " + r.ok + " · 틀린 횟수 " + r.ng + (r.l === 1 ? " · 최근 정답" : r.l === 0 ? " · 최근 오답" : "") + " · " + CATS[w.c] })]);
+        var set = el("div", { class: "setst", role: "group", "aria-label": "상태 직접 지정" });
+        [["k", "외웠어요"], ["u", "헷갈려요"], ["x", "모르겠어요"], ["n", "미학습"]].forEach(function (s) { set.appendChild(el("button", { class: s[0], type: "button", "aria-pressed": String((r.s || "n") === s[0]), text: s[1], onclick: function (e) { e.stopPropagation(); apply(w.id, "set", s[0] === "n" ? "" : s[0]); V.list(); } })); });
+        more.appendChild(set);
+      }
+      return el("div", { class: "item" + (pl.on && pl.cur === w.id ? " playing" : ""), "data-id": String(w.id) }, [el("div", { class: "item-main" }, [starBtn(w.id, function () { if (ls.f === "star") V.list(); }),
+        el("button", { class: "item-btn", type: "button", "aria-expanded": String(open), onclick: function () { ls.open[w.id] = !ls.open[w.id]; V.list(); } }, [el("span", { class: "a", text: w.a }), el("span", { class: "m", text: w.m }), el("i", { class: "dot " + (r.s || "n"), "aria-label": { k: "외웠어요", u: "헷갈려요", x: "모르겠어요" }[r.s] || "미학습", style: "margin:0" })])]), more]);
+    }
+    if (ls.sort === "abc") { items.slice().sort(function (a, b) { return a.a.toLowerCase().localeCompare(b.a.toLowerCase()); }).forEach(function (w) { root.appendChild(row(w)); }); }
+    else { CATS.forEach(function (t, ci) { var g = items.filter(function (w) { return w.c === ci; }); if (!g.length) return; root.appendChild(el("div", { class: "group-h" }, [el("i", { style: "background:" + CAT_COLORS[ci % CAT_COLORS.length] }), t + " · " + g.length])); g.forEach(function (w) { root.appendChild(row(w)); }); }); }
+    root.appendChild(el("details", { class: "rules" }, [el("summary", { text: "진행률은 어떻게 계산되나요?" }), el("ul", null, [
+      el("li", { text: "카드: 체크한 대로 외웠어요 / 헷갈려요 / 모르겠어요로 저장돼요." }), el("li", { text: "객관식: 오답은 모르겠어요, 정답은 헷갈려요(처음 맞힘) → 외웠어요(다시 맞힘)로 올라가요." }),
+      el("li", { text: "받아쓰기: 정답이면 외웠어요, 오답이면 모르겠어요예요." }), el("li", { text: "상단 막대의 % 는 외웠어요 단어가 전체 " + N + "개 중 차지하는 비율이에요." }), el("li", { text: "이 기기 브라우저에만 저장돼요. 다른 기기나 브라우저와는 공유되지 않아요." })])]));
+    var rz = el("div", { class: "reset-zone" });
+    if (!ls.confirm) rz.appendChild(el("button", { class: "btn", type: "button", text: "이 단어장 진도 초기화", onclick: function () { ls.confirm = true; V.list(); } }));
+    else { rz.appendChild(el("span", { class: "note", text: "이 단어장의 별표와 기록이 지워져요. 계속할까요?" })); rz.appendChild(el("button", { class: "btn primary", type: "button", style: "background:var(--unknown);border-color:var(--unknown);color:#fff", text: "네, 초기화", onclick: function () { WORDS.forEach(function (w) { delete S.w[w.id]; }); save(); ls.confirm = false; cs = qs = ds = null; renderCounts(); V.list(); } })); rz.appendChild(el("button", { class: "btn ghost", type: "button", text: "취소", onclick: function () { ls.confirm = false; V.list(); } })); }
+    root.appendChild(rz);
+    if (!storeOk) root.appendChild(el("p", { class: "warn", text: "이 환경에서는 진도를 저장할 수 없어요. 창을 닫으면 기록이 사라져요." }));
+    plUI();
+    if (keepFocus) { var ni = $("#q"); if (ni) { ni.focus(); try { ni.setSelectionRange(pos, pos); } catch (e) {} } }
+  };
+
+    /* ================= 5. DECK LIBRARY ================= */
+  function go(tab) { if (location.hash.slice(1) === tab) show(tab); else location.hash = tab; }
+  function chooseDeck(id, tab) {
+    if (CUR.id !== id) { S.ui.deck = id; setDeck(id); S.ui.scope = "all"; cs = qs = ds = null; ls.cat = "-1"; ls.f = "all"; ls.q = ""; ls.open = {}; ls.confirm = false; }
+    save(); renderCounts(); go(tab);
+  }
+  function deckStats(d) {
+    var c = { k: 0, u: 0, x: 0, n: 0, star: 0, wrong: 0 };
+    d.words.forEach(function (w) { var r = get(w.id); if (r.s === "k") c.k++; else if (r.s === "u") c.u++; else if (r.s === "x") c.x++; else c.n++; if (r.st) c.star++; if (r.l === 0) c.wrong++; });
+    return c;
+  }
+  V.decks = function () {
+    var root = $("#v-decks"); root.innerHTML = "";
+    var tot = 0, totk = 0; DECKS.forEach(function (d) { var c = deckStats(d); tot += d.words.length; totk += c.k; });
+    root.appendChild(el("div", { class: "row-between", style: "margin-bottom:12px" }, [el("h2", { class: "sec-h", style: "margin:0", text: "내 단어장" }), el("span", { class: "count", text: "외운 단어 " + totk + " / " + tot })]));
+    DECKS.forEach(function (d) {
+      var c = deckStats(d), n = d.words.length, cur = d.id === CUR.id;
+      var bar = el("div", { class: "pbar", role: "img", "aria-label": d.name + " 진행률 " + Math.round(c.k / n * 100) + "%" }, [el("i", { class: "k", style: "width:" + (c.k / n * 100) + "%" }), el("i", { class: "u", style: "width:" + (c.u / n * 100) + "%" }), el("i", { class: "x", style: "width:" + (c.x / n * 100) + "%" })]);
+      var lg = el("div", { class: "legend" });
+      [["k", "외웠어요", c.k], ["u", "헷갈려요", c.u], ["x", "모르겠어요", c.x], ["n", "미학습", c.n]].forEach(function (a) { lg.appendChild(el("span", null, [el("i", { class: "dot " + a[0] }), a[1] + " ", el("b", { text: String(a[2]) })])); });
+      root.appendChild(el("div", { class: "deck" + (cur ? " cur" : "") }, [
+        el("div", { class: "row-between" }, [el("h3", { class: "deck-name", text: d.name }), cur ? el("span", { class: "badge", text: "사용 중" }) : el("span", { class: "pct", text: Math.round(c.k / n * 100) + "%" })]),
+        el("div", { class: "count", text: n + "개 단어 · " + d.cats.length + "개 분야 · " + d.sub + (c.star ? " · ★ " + c.star : "") + (c.wrong ? " · 틀린 것 " + c.wrong : "") }),
+        bar, lg,
+        el("div", { class: "deck-actions" }, [
+          el("button", { class: "btn primary", type: "button", text: "이 단어장으로 학습", onclick: function () { chooseDeck(d.id, "cards"); } }),
+          el("button", { class: "btn", type: "button", text: "이 단어장 시험", onclick: function () { var e = exCfg(); e.mode = "scope"; DECKS.forEach(function (x) { e.sel[x.id] = x.id === d.id ? x.cats.map(function (_, i) { return i; }) : []; }); e.f = "all"; es = null; save(); go("exam"); } })])]));
+    });
+    root.appendChild(el("p", { class: "note", style: "margin-top:14px", text: "단어장을 섞거나 단어를 직접 골라 시험 보려면 아래 ‘시험’ 탭을 이용하세요." }));
+  };
+
+  /* ================= 6. EXAM ================= */
+  var es = null, exQ = "", exDeckF = "all";
+  function segOf(label, opts, cur, fn) {
+    var seg = el("div", { class: "seg", role: "group", "aria-label": label });
+    opts.forEach(function (o) { seg.appendChild(el("button", { type: "button", "aria-pressed": String(cur === o[0]), text: o[1], onclick: function () { fn(o[0]); } })); });
+    return el("div", { class: "opts" }, [el("span", { class: "bar-label", style: "margin:0", text: label }), seg]);
+  }
+  function exCfg() {
+    var e = S.ui.ex;
+    if (!e) { e = S.ui.ex = { mode: "scope", sel: {}, f: "all", n: 20, type: "mix", picks: [] }; e.sel[CUR.id] = CUR.cats.map(function (_, i) { return i; }); }
+    DECKS.forEach(function (d) { if (!e.sel[d.id]) e.sel[d.id] = []; });
+    e.picks = (e.picks || []).filter(function (id) { return BYID[id]; });
+    return e;
+  }
+  function exPool(e) {
+    if (e.mode === "pick") return e.picks.slice();
+    var out = [];
+    DECKS.forEach(function (d) { var sel = e.sel[d.id] || []; d.words.forEach(function (w) { if (sel.indexOf(w.c) >= 0 && inScope(w, e.f)) out.push(w.id); }); });
+    return out;
+  }
+  function exStart(ids, e) {
+    var pool = shuffle(ids), n = e.n === 0 ? pool.length : Math.min(e.n, pool.length);
+    es = { q: pool.slice(0, n).map(function (id) { var t = e.type === "mix" ? (Math.random() < 0.5 ? "mc" : "w") : e.type; return t === "mc" ? Object.assign({ t: "mc" }, makeQ(id)) : { t: "w", id: id }; }), i: 0, picked: -1, state: "ask", val: "", hint: false, note: "", score: 0, wrong: [], cfg: e };
+  }
+  function wordMatch(w, q) { var k = flat(q); if (!k) return true; return flat(w.a + w.o + w.m + w.p).indexOf(k) >= 0 || (w.a + w.o + w.m).toLowerCase().indexOf(q.toLowerCase().trim()) >= 0; }
+  function examFoot() {
+    var f = $("#exfoot"); if (!f) return;
+    f.innerHTML = ""; var e = exCfg(), ids = exPool(e), n = e.n === 0 ? ids.length : Math.min(e.n, ids.length);
+    f.appendChild(segOf("문제 수", [[10, "10"], [20, "20"], [30, "30"], [0, "전체"]], e.n, function (v) { e.n = v; save(); examFoot(); }));
+    f.appendChild(segOf("문제 유형", [["mc", "객관식"], ["w", "받아쓰기"], ["mix", "섞어서"]], e.type, function (v) { e.type = v; save(); examFoot(); }));
+    f.appendChild(el("p", { class: "count", style: "margin:4px 0 10px", "aria-live": "polite", text: "시험 범위 " + ids.length + "개 단어 → " + n + "문제가 무작위로 나와요" }));
+    f.appendChild(el("button", { class: "btn primary", type: "button", style: "width:100%", disabled: ids.length === 0, text: ids.length ? "시험 시작 (" + n + "문제)" : "범위를 먼저 골라 주세요", onclick: function () { exStart(ids, e); V.exam(); window.scrollTo(0, 0); } }));
+  }
+  function renderPick() {
+    var box = $("#pklist"); if (!box) return; var e = exCfg(); box.innerHTML = "";
+    var items = ALLW.filter(function (w) { return (exDeckF === "all" || DECK_OF[w.id].id === exDeckF) && wordMatch(w, exQ); });
+    var cnt = $("#pkcount"); if (cnt) cnt.textContent = "선택 " + e.picks.length + "개 · 표시 " + items.length + "개";
+    if (!items.length) { box.appendChild(el("div", { class: "empty" }, [el("strong", { text: "검색 결과가 없어요" })])); return; }
+    items.forEach(function (w) {
+      var on = e.picks.indexOf(w.id) >= 0;
+      var cb = el("input", { type: "checkbox", checked: on ? "checked" : null, "aria-label": w.a + " " + w.m });
+      cb.addEventListener("change", function () { var k = e.picks.indexOf(w.id); if (cb.checked && k < 0) e.picks.push(w.id); else if (!cb.checked && k >= 0) e.picks.splice(k, 1); save(); if (cnt) cnt.textContent = "선택 " + e.picks.length + "개 · 표시 " + items.length + "개"; examFoot(); });
+      box.appendChild(el("label", { class: "pk" }, [cb, el("span", { class: "a", text: w.a }), el("span", { class: "m", text: w.m }), el("span", { class: "dk", text: DECK_OF[w.id].short })]));
+    });
+  }
+  function examSetup(root) {
+    var e = exCfg();
+    root.appendChild(el("p", { class: "note", style: "margin:0 0 10px", text: "범위 안에서 무작위로 출제돼요. 틀리면 ‘모르겠어요’, 맞으면 ‘외웠어요’ 쪽으로 진도에 반영돼요." }));
+    root.appendChild(segOf("범위 선택", [["scope", "단어장·분야"], ["pick", "단어 직접 선택"]], e.mode, function (v) { e.mode = v; save(); V.exam(); }));
+    if (e.mode === "scope") {
+      DECKS.forEach(function (d) {
+        var sel = e.sel[d.id], all = sel.length === d.cats.length;
+        var chips = el("div", { class: "chips", role: "group", "aria-label": d.name + " 분야" });
+        d.cats.forEach(function (t, ci) {
+          var cnt = d.words.filter(function (w) { return w.c === ci; }).length;
+          chips.appendChild(el("button", { class: "chip", type: "button", "aria-pressed": String(sel.indexOf(ci) >= 0), onclick: function () { var k = sel.indexOf(ci); if (k >= 0) sel.splice(k, 1); else sel.push(ci); save(); V.exam(); } }, [t, el("small", { text: String(cnt) })]));
+        });
+        root.appendChild(el("div", { class: "ex-deck" }, [el("div", { class: "row-between" }, [el("strong", { text: d.name }), el("button", { class: "chip", type: "button", "aria-pressed": String(all), onclick: function () { e.sel[d.id] = all ? [] : d.cats.map(function (_, i) { return i; }); save(); V.exam(); } }, ["전체 " + d.words.length])]), chips]));
+      });
+      root.appendChild(el("div", { class: "bar-label", text: "상태 조건" }));
+      var fc = el("div", { class: "chips", role: "group", "aria-label": "상태 조건" });
+      SCOPES.forEach(function (s) { fc.appendChild(el("button", { class: "chip", type: "button", "aria-pressed": String(e.f === s[0]), text: s[1], onclick: function () { e.f = s[0]; save(); V.exam(); } })); });
+      root.appendChild(fc);
+    } else {
+      var sIn = el("input", { id: "exq", class: "search", type: "search", placeholder: "단어 검색 (약어·원어·뜻)", autocomplete: "off", "aria-label": "단어 검색", value: exQ });
+      sIn.addEventListener("input", function () { exQ = sIn.value; renderPick(); });
+      root.appendChild(sIn);
+      var dc = el("div", { class: "chips", role: "group", "aria-label": "단어장 필터" });
+      [["all", "전체"]].concat(DECKS.map(function (d) { return [d.id, d.short]; })).forEach(function (s) { dc.appendChild(el("button", { class: "chip", type: "button", "aria-pressed": String(exDeckF === s[0]), text: s[1], onclick: function () { exDeckF = s[0]; V.exam(); } })); });
+      root.appendChild(dc);
+      root.appendChild(el("div", { class: "row-between", style: "margin-bottom:8px" }, [el("span", { class: "count", id: "pkcount" }), el("span", { style: "display:flex;gap:6px" }, [
+        el("button", { class: "btn ghost", type: "button", style: "min-height:36px;padding:6px 10px", text: "표시된 것 모두 선택", onclick: function () { ALLW.forEach(function (w) { if ((exDeckF === "all" || DECK_OF[w.id].id === exDeckF) && wordMatch(w, exQ) && e.picks.indexOf(w.id) < 0) e.picks.push(w.id); }); save(); renderPick(); examFoot(); } }),
+        el("button", { class: "btn ghost", type: "button", style: "min-height:36px;padding:6px 10px", text: "선택 비우기", onclick: function () { e.picks = []; save(); renderPick(); examFoot(); } })])]));
+      root.appendChild(el("div", { id: "pklist" }));
+      renderPick();
+    }
+    root.appendChild(el("div", { class: "ex-foot", id: "exfoot" }));
+    examFoot();
+  }
+  function examRun(root) {
+    var q = es.q[es.i], w = BYID[q.id], d = DECK_OF[q.id], mc = q.t === "mc", done = mc ? es.picked >= 0 : es.state !== "ask";
+    root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: "문제 " + (es.i + 1) + " / " + es.q.length + " · 정답 " + es.score }), starBtn(w.id)]));
+    root.appendChild(el("div", { class: "meter", "aria-hidden": "true" }, [el("i", { style: "width:" + (es.i / es.q.length * 100) + "%" })]));
+    if (mc) {
+      var K = KINDS[q.kind];
+      var prompt = K.q === "a" ? el("div", { class: "big-abbr", text: w.a }) : K.q === "m" ? el("div", { class: "big-text", text: w.m }) : el("div", { class: "big-origin", text: w.o });
+      root.appendChild(el("div", { class: "q-card" }, [el("span", { class: "q-kind", text: K.label + " · " + d.short }), el("div", { class: "q-prompt" }, [prompt])]));
+      var ch = el("div", { class: "choices", role: "group", "aria-label": "보기" });
+      q.opts.forEach(function (oid, idx) {
+        var x = BYID[oid], cls = "choice";
+        if (done) { if (idx === q.ans) cls += " right"; else if (idx === es.picked) cls += " wrong"; else cls += " dim"; }
+        ch.appendChild(el("button", { class: cls, type: "button", disabled: done, onclick: function () { examPick(idx); } }, [el("span", { class: "n", text: String(idx + 1) }), el("div", null, [fieldNode(K.ans[0], "l1", x[K.ans[0]]), fieldNode(K.ans[1], "l2", x[K.ans[1]])])]));
+      });
+      root.appendChild(ch);
+      if (done) {
+        var good = es.picked === q.ans;
+        root.appendChild(el("div", { class: "feedback", "aria-live": "polite" }, [el("div", { class: "verdict " + (good ? "ok" : "no"), text: good ? "정답이에요!" : "아쉬워요, 정답은 " + (q.ans + 1) + "번" }), el("div", { class: "full" }, [el("span", { class: "a", text: w.a }), "  " + w.o + " [" + w.p + "] · " + w.m, sayBtn(w.o)]), tipBox(w)]));
+      }
+    } else {
+      var tw = twins(w);
+      root.appendChild(el("div", { class: "dict-card" }, [el("div", { class: "head" }, [el("span", { class: "tag", text: d.short + " · " + d.cats[w.c] })]),
+        el("div", { class: "mid" }, [w.na ? el("div", { class: "big-text", text: w.m }) : el("div", { class: "big-abbr", text: w.a })]),
+        el("div", { class: "hint-line" }, [w.na ? "약어가 없는 용어예요 · 뜻을 보고 원어를 입력하세요" : (es.hint || done) ? "뜻: " + w.m : el("button", { class: "btn ghost", type: "button", text: "힌트: 뜻 보기", onclick: function () { es.hint = true; V.exam(); } })])]));
+      var inp = el("input", { id: "exans", type: "text", lang: "en", enterkeyhint: "done", autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false", placeholder: "원어(영문)를 입력하세요", "aria-label": "원어 입력", disabled: done });
+      inp.value = es.val; inp.addEventListener("input", function () { es.val = inp.value; });
+      inp.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); if (es.state === "ask") examSubmit(); else examNext(); } });
+      root.appendChild(el("div", { class: "field" + (es.state === "ok" ? " ok" : es.state === "no" ? " no" : "") }, [inp, done ? null : el("button", { class: "btn primary", type: "button", text: "채점", onclick: examSubmit })]));
+      if (!done) {
+        root.appendChild(el("div", { class: "dict-actions" }, [el("button", { class: "btn ghost", type: "button", text: "모르겠어요 (정답 보기)", onclick: function () { examWFinish(false, ""); } }), tw.length ? el("span", { class: "note", text: "같은 약어가 " + (tw.length + 1) + "개 있어요" }) : null]));
+        setTimeout(function () { try { inp.focus({ preventScroll: true }); } catch (e2) { inp.focus(); } }, 30);
+      } else {
+        root.appendChild(el("div", { class: "feedback", "aria-live": "polite" }, [el("div", { class: "verdict " + (es.state === "ok" ? "ok" : "no"), text: es.state === "ok" ? "정답이에요!" : "틀렸어요" }), es.note ? el("div", { class: "note", text: es.note }) : null,
+          el("div", { class: "full" }, ["정답: ", el("b", { text: w.o }), "  [" + w.p + "]", sayBtn(w.o)]),
+          tw.length ? el("div", { class: "note", style: "margin-bottom:8px", text: "같은 약어 " + w.a + ": " + [w].concat(tw).map(function (x) { return x.o + "(" + x.m + ")"; }).join(" / ") }) : null, tipBox(w)]));
+      }
+    }
+    if (done) root.appendChild(el("button", { class: "btn primary", id: "exnext", type: "button", style: "width:100%", text: es.i + 1 >= es.q.length ? "결과 보기" : "다음 문제", onclick: examNext }));
+    root.appendChild(el("div", { style: "text-align:center;margin-top:10px" }, [el("button", { class: "btn ghost", type: "button", text: "시험 그만두기", onclick: function () { es = null; V.exam(); } })]));
+    if (done) { var nb = $("#exnext"); if (nb && !mc) nb.focus({ preventScroll: true }); }
+  }
+  function examPick(idx) { if (!es || es.picked >= 0) return; var q = es.q[es.i], good = idx === q.ans; es.picked = idx; if (good) es.score++; else es.wrong.push(q.id); apply(q.id, "mc", good); V.exam(); }
+  function examSubmit() { var w = BYID[es.q[es.i].id]; if (!es.val.trim()) return; var g = grade(w, es.val); examWFinish(g.ok, g.note); }
+  function examWFinish(ok, note) { var id = es.q[es.i].id; es.state = ok ? "ok" : "no"; es.note = note || ""; if (ok) es.score++; else es.wrong.push(id); apply(id, "dict", ok); V.exam(); }
+  function examNext() { es.i++; es.picked = -1; es.state = "ask"; es.hint = false; es.val = ""; es.note = ""; V.exam(); window.scrollTo(0, 0); }
+  function examSummary(root) {
+    var n = es.q.length, uniq = es.wrong.filter(function (x, i, a) { return a.indexOf(x) === i; });
+    var box = el("div", { class: "summary" }, [el("h2", { text: "시험 결과" }), el("div", { class: "score", text: es.score + " / " + n }), el("div", { class: "count", text: "정답률 " + Math.round(es.score / n * 100) + "%" })]);
+    if (uniq.length) { var wl = el("div", { class: "wrong-list" }); uniq.forEach(function (id) { var w = BYID[id]; wl.appendChild(el("div", { class: "w" }, [el("span", { class: "a", text: w.a }), el("div", { class: "m", text: w.o + " · " + w.m + " (" + DECK_OF[id].short + ")" })])); }); box.appendChild(wl); }
+    var cfg = es.cfg;
+    box.appendChild(el("div", { class: "actions" }, [
+      uniq.length ? el("button", { class: "btn primary", type: "button", text: "틀린 것만 다시 (" + uniq.length + ")", onclick: function () { exStart(uniq, Object.assign({}, cfg, { n: 0 })); V.exam(); window.scrollTo(0, 0); } }) : null,
+      el("button", { class: "btn", type: "button", text: "같은 범위로 새 시험", onclick: function () { var ids = exPool(cfg); if (!ids.length) { es = null; V.exam(); return; } exStart(ids, cfg); V.exam(); window.scrollTo(0, 0); } }),
+      el("button", { class: "btn ghost", type: "button", text: "범위 다시 고르기", onclick: function () { es = null; V.exam(); } })]));
+    root.appendChild(box);
+  }
+  V.exam = function () {
+    var root = $("#v-exam"); root.innerHTML = "";
+    if (es) { if (es.i >= es.q.length) examSummary(root); else examRun(root); return; }
+    examSetup(root);
+  };
+
+  /* ---------- tabs / routing ---------- */
+  var TABS = ["decks", "cards", "quiz", "write", "list", "exam"];
+  function show(tab) {
+    if (TABS.indexOf(tab) < 0) tab = "cards";
+    if (tab !== "list" && pl.on) plStop(); S.ui.tab = tab; save();
+    TABS.forEach(function (t) { $("#v-" + t).hidden = t !== tab; });
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+    V[tab]();
+    window.scrollTo(0, 0);
+  }
+  document.getElementById("tabs").addEventListener("click", function (e) { var b = e.target.closest(".tab"); if (!b) return; if (location.hash.slice(1) === b.dataset.tab) show(b.dataset.tab); else location.hash = b.dataset.tab; });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+  document.addEventListener("keydown", function (e) {
+    var t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
+    var tab = S.ui.tab;
+    if (tab === "cards" && cs && cs.i < cs.q.length) { if (e.key === " " || e.key === "Enter") { if (t && t.tagName === "BUTTON") return; e.preventDefault(); $(".card").click(); } else if (cs.flipped && "123".indexOf(e.key) >= 0 && e.key) cardMark(["k", "u", "x"][+e.key - 1]); }
+    else if (tab === "exam" && es && es.i < es.q.length && es.q[es.i].t === "mc" && es.picked < 0 && "1234".indexOf(e.key) >= 0 && e.key) examPick(+e.key - 1);
+    else if (tab === "quiz" && qs && qs.i < qs.q.length) { if (qs.picked < 0 && "1234".indexOf(e.key) >= 0 && e.key) quizPick(+e.key - 1); else if (qs.picked >= 0 && e.key === "Enter") { if (t && t.tagName === "BUTTON") return; qs.i++; qs.picked = -1; V.quiz(); } }
+  });
+
+  document.getElementById("brand").addEventListener("click", function () { go("decks"); });
+  renderCounts();
+  var h = location.hash.slice(1);
+  show(TABS.indexOf(h) >= 0 ? h : (TABS.indexOf(S.ui.tab) >= 0 ? S.ui.tab : "decks"));
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
+</script>
+</body>
+</html>
