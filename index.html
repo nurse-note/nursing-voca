@@ -260,6 +260,12 @@ main { padding-block: 16px 104px; }
 .dup-same { background: var(--accent-soft); } .dup-same b { color: var(--accent); }
 .dup-twin { background: var(--unknown-soft); } .dup-twin b { color: var(--unknown); }
 .dup-badge { display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; vertical-align: 1px; white-space: nowrap; }
+.hint-list { text-align: left; margin: 14px 0 6px; background: var(--unsure-soft); border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; }
+.hint-list > b { color: var(--unsure); font-size: 13px; }
+.hint-list .hl { display: grid; grid-template-columns: minmax(56px, 28%) 1fr auto; gap: 8px; align-items: baseline; font-size: 13.5px; }
+.hint-list .a { font-family: var(--font-mono); font-weight: 600; overflow-wrap: anywhere; }
+.hint-list .m { overflow-wrap: anywhere; word-break: keep-all; }
+.hint-list .r { font-size: 12px; font-weight: 700; } .hint-list .r.ok { color: var(--known); } .hint-list .r.no { color: var(--unknown); }
 .acct { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
 .acct-t { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; overflow-wrap: anywhere; }
 .acct-st { font-size: 12.5px; color: var(--muted); }
@@ -596,7 +602,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
 
   /* ================= 3. DICTATION ================= */
   var ds = null;
-  function writeStart(ids) { ds = { q: shuffle(ids || scopeIds(S.ui.scope)), i: 0, state: "ask", hint: false, val: "", ok: 0, wrong: [], note: "" }; }
+  function writeStart(ids) { ds = { q: shuffle(ids || scopeIds(S.ui.scope)), i: 0, state: "ask", hint: false, val: "", ok: 0, wrong: [], note: "", hints: [] }; }
   function accepted(w) {
     var list = [w].concat(twins(w)), set = {};
     list.forEach(function (x) {
@@ -622,10 +628,10 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     if (!ds.q.length) { root.appendChild(emptyScope()); return; }
     if (ds.i >= ds.q.length) { writeSummary(root); return; }
     var w = BYID[ds.q[ds.i]], tw = twins(w), done = ds.state !== "ask";
-    root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: (ds.i + 1) + " / " + ds.q.length + " · 정답 " + ds.ok }), starBtn(w.id)]));
+    root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: (ds.i + 1) + " / " + ds.q.length + " · 정답 " + ds.ok + (ds.hints.length ? " · 힌트 " + ds.hints.length + "회" : "") }), starBtn(w.id)]));
     root.appendChild(el("div", { class: "meter", "aria-hidden": "true" }, [el("i", { style: "width:" + (ds.i / ds.q.length * 100) + "%" })]));
-    root.appendChild(el("div", { class: "dict-card" }, [el("div", { class: "head" }, [catTag(w)]), el("div", { class: "mid" }, [w.na ? el("div", { class: "big-text", text: w.m }) : el("div", { class: "big-abbr", text: w.a })]),
-      el("div", { class: "hint-line" }, [w.na ? "약어가 없는 용어예요 · 뜻을 보고 원어를 입력하세요" : (ds.hint || done) ? "뜻: " + w.m : el("button", { class: "btn ghost", type: "button", text: "힌트: 뜻 보기", onclick: function () { ds.hint = true; V.write(); } })])]));
+    root.appendChild(el("div", { class: "dict-card" }, [el("div", { class: "head" }, [el("span", { class: "tag", text: DECK_OF[w.id].name })]), el("div", { class: "mid" }, [w.na ? el("div", { class: "big-text", text: w.m }) : el("div", { class: "big-abbr", text: w.a })]),
+      el("div", { class: "hint-line" }, [w.na ? "약어가 없는 용어예요 · 뜻을 보고 원어를 입력하세요" : (ds.hint || done) ? "뜻: " + w.m : el("button", { class: "btn ghost", type: "button", text: "힌트: 뜻 보기", onclick: function () { ds.hint = true; if (ds.hints.indexOf(ds.q[ds.i]) < 0) ds.hints.push(ds.q[ds.i]); V.write(); } })])]));
     var inp = el("input", { id: "ans", type: "text", lang: "en", inputmode: "text", enterkeyhint: "done", autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false", placeholder: "원어(영문)를 입력하세요", "aria-label": "원어 입력", disabled: done });
     inp.value = ds.val; inp.addEventListener("input", function () { ds.val = inp.value; });
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); if (ds.state === "ask") writeSubmit(); else writeNext(); } });
@@ -645,9 +651,16 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   function writeSubmit() { var w = BYID[ds.q[ds.i]]; if (!ds.val.trim()) return; var g = grade(w, ds.val); writeFinish(g.ok, g.note, false); }
   function writeFinish(ok, note) { var id = ds.q[ds.i]; ds.state = ok ? "ok" : "no"; ds.note = note || ""; if (ok) ds.ok++; else ds.wrong.push(id); apply(id, "dict", ok); V.write(); var nb = $("#nextbtn"); if (nb) nb.focus({ preventScroll: true }); }
   function writeNext() { ds.i++; ds.state = "ask"; ds.hint = false; ds.val = ""; ds.note = ""; V.write(); }
+  function hintList(ids, wrong) {
+    if (!ids.length) return el("p", { class: "count", style: "margin:10px 0 0", text: "힌트 사용 0회" });
+    var box = el("div", { class: "hint-list" }, [el("b", { text: "힌트 사용 " + ids.length + "회" })]);
+    ids.forEach(function (id) { var w = BYID[id], ok = wrong.indexOf(id) < 0; box.appendChild(el("div", { class: "hl" }, [el("span", { class: "a", text: w.a }), el("span", { class: "m", text: w.m }), el("span", { class: "r " + (ok ? "ok" : "no"), text: ok ? "정답" : "오답" })])); });
+    return box;
+  }
   function writeSummary(root) {
     var n = ds.q.length, uniq = ds.wrong.filter(function (x, i, a) { return a.indexOf(x) === i; });
     var box = el("div", { class: "summary" }, [el("h2", { text: "받아쓰기 결과" }), el("div", { class: "score", text: ds.ok + " / " + n }), el("div", { class: "count", text: "정답률 " + Math.round(ds.ok / n * 100) + "%" })]);
+    box.appendChild(hintList(ds.hints, ds.wrong));
     if (uniq.length) { var wl = el("div", { class: "wrong-list" }); uniq.forEach(function (id) { var w = BYID[id]; wl.appendChild(el("div", { class: "w" }, [el("span", { class: "a", text: w.a }), el("div", { class: "m", text: w.o + " · " + w.m })])); }); box.appendChild(wl); }
     box.appendChild(el("div", { class: "actions" }, [uniq.length ? el("button", { class: "btn primary", type: "button", text: "틀린 것만 다시 (" + uniq.length + ")", onclick: function () { writeStart(uniq); V.write(); } }) : null, el("button", { class: "btn", type: "button", text: "새로 시작", onclick: function () { writeStart(); V.write(); } })]));
     root.appendChild(box);
@@ -773,7 +786,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   }
   function exStart(ids, e) {
     var pool = shuffle(ids), n = e.n === 0 ? pool.length : Math.min(e.n, pool.length);
-    es = { q: pool.slice(0, n).map(function (id) { var t = e.type === "mix" ? (Math.random() < 0.5 ? "mc" : "w") : e.type; return t === "mc" ? Object.assign({ t: "mc" }, makeQ(id)) : { t: "w", id: id }; }), i: 0, picked: -1, state: "ask", val: "", hint: false, note: "", score: 0, wrong: [], cfg: e };
+    es = { q: pool.slice(0, n).map(function (id) { var t = e.type === "mix" ? (Math.random() < 0.5 ? "mc" : "w") : e.type; return t === "mc" ? Object.assign({ t: "mc" }, makeQ(id)) : { t: "w", id: id }; }), i: 0, picked: -1, state: "ask", val: "", hint: false, note: "", score: 0, wrong: [], hints: [], cfg: e };
   }
   function wordMatch(w, q) { var k = flat(q); if (!k) return true; return flat(w.a + w.o + w.m + w.p).indexOf(k) >= 0 || (w.a + w.o + w.m).toLowerCase().indexOf(q.toLowerCase().trim()) >= 0; }
   function examFoot() {
@@ -832,7 +845,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   }
   function examRun(root) {
     var q = es.q[es.i], w = BYID[q.id], d = DECK_OF[q.id], mc = q.t === "mc", done = mc ? es.picked >= 0 : es.state !== "ask";
-    root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: "문제 " + (es.i + 1) + " / " + es.q.length + " · 정답 " + es.score }), starBtn(w.id)]));
+    root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: "문제 " + (es.i + 1) + " / " + es.q.length + " · 정답 " + es.score + (es.hints.length ? " · 힌트 " + es.hints.length + "회" : "") }), starBtn(w.id)]));
     root.appendChild(el("div", { class: "meter", "aria-hidden": "true" }, [el("i", { style: "width:" + (es.i / es.q.length * 100) + "%" })]));
     if (mc) {
       var K = KINDS[q.kind];
@@ -851,9 +864,9 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
       }
     } else {
       var tw = twins(w);
-      root.appendChild(el("div", { class: "dict-card" }, [el("div", { class: "head" }, [el("span", { class: "tag", text: d.short + " · " + d.cats[w.c] })]),
+      root.appendChild(el("div", { class: "dict-card" }, [el("div", { class: "head" }, [el("span", { class: "tag", text: d.name })]),
         el("div", { class: "mid" }, [w.na ? el("div", { class: "big-text", text: w.m }) : el("div", { class: "big-abbr", text: w.a })]),
-        el("div", { class: "hint-line" }, [w.na ? "약어가 없는 용어예요 · 뜻을 보고 원어를 입력하세요" : (es.hint || done) ? "뜻: " + w.m : el("button", { class: "btn ghost", type: "button", text: "힌트: 뜻 보기", onclick: function () { es.hint = true; V.exam(); } })])]));
+        el("div", { class: "hint-line" }, [w.na ? "약어가 없는 용어예요 · 뜻을 보고 원어를 입력하세요" : (es.hint || done) ? "뜻: " + w.m : el("button", { class: "btn ghost", type: "button", text: "힌트: 뜻 보기", onclick: function () { es.hint = true; if (es.hints.indexOf(es.q[es.i].id) < 0) es.hints.push(es.q[es.i].id); V.exam(); } })])]));
       var inp = el("input", { id: "exans", type: "text", lang: "en", enterkeyhint: "done", autocomplete: "off", autocapitalize: "off", autocorrect: "off", spellcheck: "false", placeholder: "원어(영문)를 입력하세요", "aria-label": "원어 입력", disabled: done });
       inp.value = es.val; inp.addEventListener("input", function () { es.val = inp.value; });
       inp.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); if (es.state === "ask") examSubmit(); else examNext(); } });
@@ -879,6 +892,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     var n = es.q.length, uniq = es.wrong.filter(function (x, i, a) { return a.indexOf(x) === i; });
     var box = el("div", { class: "summary" }, [el("h2", { text: "시험 결과" }), el("div", { class: "score", text: es.score + " / " + n }), el("div", { class: "count", text: "정답률 " + Math.round(es.score / n * 100) + "%" })]);
     if (uniq.length) { var wl = el("div", { class: "wrong-list" }); uniq.forEach(function (id) { var w = BYID[id]; wl.appendChild(el("div", { class: "w" }, [el("span", { class: "a", text: w.a }), el("div", { class: "m", text: w.o + " · " + w.m + " (" + DECK_OF[id].short + ")" })])); }); box.appendChild(wl); }
+    if (es.q.some(function (q) { return q.t === "w"; })) box.insertBefore(hintList(es.hints, es.wrong), box.children[3] || null);
     var cfg = es.cfg;
     box.appendChild(el("div", { class: "actions" }, [
       uniq.length ? el("button", { class: "btn primary", type: "button", text: "틀린 것만 다시 (" + uniq.length + ")", onclick: function () { exStart(uniq, Object.assign({}, cfg, { n: 0 })); V.exam(); window.scrollTo(0, 0); } }) : null,
