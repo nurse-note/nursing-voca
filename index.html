@@ -254,6 +254,12 @@ main { padding-block: 16px 104px; }
 .pl-s { min-width: 44px; min-height: 44px; padding: 6px; font-size: 15px; }
 .pl-main { min-height: 44px; padding: 8px 14px; white-space: nowrap; }
 #v-list { padding-bottom: 72px; }
+.dup { margin-top: 8px; display: grid; gap: 6px; font-size: 13px; line-height: 1.5; }
+.dup > div { border-radius: 10px; padding: 8px 11px; overflow-wrap: anywhere; }
+.dup b { display: block; font-size: 12px; margin-bottom: 2px; }
+.dup-same { background: var(--accent-soft); } .dup-same b { color: var(--accent); }
+.dup-twin { background: var(--unknown-soft); } .dup-twin b { color: var(--unknown); }
+.dup-badge { display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; vertical-align: 1px; white-space: nowrap; }
 .acct { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
 .acct-t { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; overflow-wrap: anywhere; }
 .acct-st { font-size: 12.5px; color: var(--muted); }
@@ -304,6 +310,13 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
 <script>
 (function () {
   "use strict";
+  /* ===== 중복 표시 직접 고치기 =====
+     번호는 목록에서 단어를 펼치면 보이는 '고유번호'를 쓰세요.
+     DUP_ADD    : 같은 단어인데 중복으로 표시가 안 될 때   예) [[4, 1031]]
+     DUP_REMOVE : 다른 단어인데 중복으로 잘못 표시될 때   예) [[54, 1153]]
+     여러 개는 쉼표로 이어 쓰기: [[4, 1031], [36, 1112]] */
+  var DUP_ADD = [];
+  var DUP_REMOVE = [];
   var DECKS = DATA.decks, ALLW = [], BYID = {}, DECK_OF = {}, CATS, WORDS, N, CUR;
   DECKS.forEach(function (d) { d.words.forEach(function (w) { ALLW.push(w); BYID[w.id] = w; DECK_OF[w.id] = d; }); });
   function setDeck(id) { CUR = DECKS.filter(function (d) { return d.id === id; })[0] || DECKS[0]; CATS = CUR.cats; WORDS = CUR.words; N = WORDS.length; }
@@ -336,11 +349,42 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     return b;
   }
   function catTag(w) { return el("span", { class: "tag" }, [el("i", { style: "background:" + CAT_COLORS[w.c % CAT_COLORS.length] }), DECK_OF[w.id].cats[w.c]]); }
-  function tipBox(w) { return el("div", { class: "tip" }, [el("b", { text: "암기 TIP" }), w.t]); }
+  function tipBox(w) { var tip = el("div", { class: "tip" }, [el("b", { text: "암기 TIP" }), w.t]), dx = typeof dupBox === "function" ? dupBox(w) : null; return dx ? el("div", null, [tip, dx]) : tip; }
   function norm(s) { return String(s).toLowerCase().replace(/[^a-z0-9가-힣\s]/g, " ").replace(/\s+/g, " ").trim(); }
   function flat(s) { return norm(s).replace(/\s/g, ""); }
   function lev1(a, b) { if (a === b) return true; if (Math.abs(a.length - b.length) > 1) return false; var i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1); return a.length > b.length ? a.slice(i + 1) === b.slice(i) : b.slice(i + 1) === a.slice(i); }
   function twins(w) { var k = w.a.toLowerCase(); return ALLW.filter(function (x) { return x.a.toLowerCase() === k && x.id !== w.id; }); }
+  /* ---------- 중복 단어 / 같은 약어 다른 뜻 ---------- */
+  var DUP = {}, TWIN = {}, REFNO = {};
+  (function () {
+    DECKS.forEach(function (d) { var n = {}; d.words.forEach(function (w) { n[w.c] = (n[w.c] || 0) + 1; REFNO[w.id] = d.id === "pre" ? n[w.c] : w.id; }); });
+    function nA(s) { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[\s.\-]/g, ""); }
+    function nAL(s) { return nA(s).replace(/[^a-z0-9]/g, ""); }
+    function nO(s) { return s.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9]/g, ""); }
+    function nM(s) { return s.replace(/[^가-힣a-zA-Z0-9]/g, ""); }
+    function key(a, b) { return a < b ? a + "-" + b : b + "-" + a; }
+    var add = {}, rem = {};
+    DUP_ADD.forEach(function (p) { add[key(p[0], p[1])] = 1; }); DUP_REMOVE.forEach(function (p) { rem[key(p[0], p[1])] = 1; });
+    var P = ALLW.map(function (w) { return { w: w, a: nA(w.a), al: nAL(w.a), o: nO(w.o), m: nM(w.m) }; });
+    for (var i = 0; i < P.length; i++) for (var j = i + 1; j < P.length; j++) {
+      var x = P[i], y = P[j], k = key(x.w.id, y.w.id), same = false;
+      if (x.w.na || y.w.na) same = !!(x.o && x.o === y.o);
+      else if (x.al && x.al === y.al) same = x.o === y.o || x.m === y.m || (x.o.length > 3 && y.o.length > 3 && (x.o.indexOf(y.o) >= 0 || y.o.indexOf(x.o) >= 0));
+      else same = !!(x.o && x.o === y.o);
+      if (add[k]) same = true; if (rem[k]) same = false;
+      if (same) { (DUP[x.w.id] = DUP[x.w.id] || []).push(y.w.id); (DUP[y.w.id] = DUP[y.w.id] || []).push(x.w.id); }
+      else if (x.a && x.a === y.a) { (TWIN[x.w.id] = TWIN[x.w.id] || []).push(y.w.id); (TWIN[y.w.id] = TWIN[y.w.id] || []).push(x.w.id); }
+    }
+  })();
+  function wordRef(w) { var d = DECK_OF[w.id]; return d.id === "pre" ? d.short + " " + d.cats[w.c] + " No." + REFNO[w.id] : d.short + " " + w.id + "번"; }
+  function dupBox(w) {
+    var a = DUP[w.id] || [], b = TWIN[w.id] || [];
+    if (!a.length && !b.length) return null;
+    var box = el("div", { class: "dup" });
+    if (a.length) box.appendChild(el("div", { class: "dup-same" }, [el("b", { text: "다른 곳에도 나와요" })].concat(a.map(function (id) { var x = BYID[id]; return el("div", { text: "· " + wordRef(x) + " — " + x.a + " (" + x.m + ")" }); }))));
+    if (b.length) box.appendChild(el("div", { class: "dup-twin" }, [el("b", { text: "주의! 같은 약어, 다른 뜻" })].concat(b.map(function (id) { var x = BYID[id]; return el("div", { text: "· " + wordRef(x) + " — " + x.a + ": " + x.o + " (" + x.m + ")" }); }))));
+    return box;
+  }
 
   /* ---------- 음성 (브라우저 내장 TTS) ---------- */
   var TTS = ("speechSynthesis" in window) && typeof SpeechSynthesisUtterance !== "undefined", VOICE = null;
@@ -610,12 +654,12 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   }
 
   /* ================= 4. LIST ================= */
-  var LF = [["all", "전체"], ["star", "★ 별표"], ["right", "맞은 것"], ["wrong", "틀린 것"], ["k", "외웠어요"], ["u", "헷갈려요"], ["x", "모르겠어요"], ["n", "미학습"]];
+  var LF = [["all", "전체"], ["star", "★ 별표"], ["right", "맞은 것"], ["wrong", "틀린 것"], ["k", "외웠어요"], ["u", "헷갈려요"], ["x", "모르겠어요"], ["n", "미학습"], ["dup", "중복"]];
   var ls = { q: "", f: "all", cat: "-1", sort: "cat", open: {}, confirm: false };
   function listMatch(w) {
     var r = get(w.id), f = ls.f;
     if (f === "star" && !r.st) return false; if (f === "right" && r.l !== 1) return false; if (f === "wrong" && r.l !== 0) return false;
-    if (f === "k" && r.s !== "k") return false; if (f === "u" && r.s !== "u") return false; if (f === "x" && r.s !== "x") return false; if (f === "n" && r.s) return false;
+    if (f === "dup" && !(DUP[w.id] || []).length) return false; if (f === "k" && r.s !== "k") return false; if (f === "u" && r.s !== "u") return false; if (f === "x" && r.s !== "x") return false; if (f === "n" && r.s) return false;
     if (ls.cat !== "-1" && String(w.c) !== ls.cat) return false;
     if (ls.q) { var q = flat(ls.q), hay = flat(w.a + w.o + w.m + w.p + w.t + CATS[w.c]); if (hay.indexOf(q) < 0 && (w.a + w.o + w.m + w.t).toLowerCase().indexOf(ls.q.toLowerCase().trim()) < 0) return false; }
     return true;
@@ -626,7 +670,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     var si = el("input", { id: "q", class: "search", type: "search", placeholder: "약어·원어·뜻·발음·팁 검색", autocomplete: "off", "aria-label": "검색", value: ls.q });
     si.addEventListener("input", function () { ls.q = si.value; V.list(); });
     root.appendChild(si);
-    var nmap = { all: N, star: c.star, right: c.right, wrong: c.wrong, k: c.k, u: c.u, x: c.x, n: c.n };
+    var nmap = { all: N, star: c.star, right: c.right, wrong: c.wrong, k: c.k, u: c.u, x: c.x, n: c.n, dup: WORDS.filter(function (x) { return (DUP[x.id] || []).length; }).length };
     var chips = el("div", { class: "chips", role: "group", "aria-label": "필터" });
     LF.forEach(function (f) { chips.appendChild(el("button", { class: "chip", type: "button", "aria-pressed": String(ls.f === f[0]), onclick: function () { ls.f = f[0]; V.list(); } }, [f[1], el("small", { text: String(nmap[f[0]]) })])); });
     root.appendChild(chips);
@@ -654,13 +698,13 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
       var more = null;
       if (open) {
         more = el("div", { class: "item-more" }, [el("div", { class: "origin say-row" }, [el("span", { text: w.o }), sayBtn(w.o)]), el("div", { class: "pron", text: "[" + w.p + "]" }), tipBox(w),
-          el("div", { class: "stat-line", text: "맞은 횟수 " + r.ok + " · 틀린 횟수 " + r.ng + (r.l === 1 ? " · 최근 정답" : r.l === 0 ? " · 최근 오답" : "") + " · " + CATS[w.c] })]);
+          el("div", { class: "stat-line", text: "맞은 횟수 " + r.ok + " · 틀린 횟수 " + r.ng + (r.l === 1 ? " · 최근 정답" : r.l === 0 ? " · 최근 오답" : "") + " · " + CATS[w.c] + " · 고유번호 " + w.id })]);
         var set = el("div", { class: "setst", role: "group", "aria-label": "상태 직접 지정" });
         [["k", "외웠어요"], ["u", "헷갈려요"], ["x", "모르겠어요"], ["n", "미학습"]].forEach(function (s) { set.appendChild(el("button", { class: s[0], type: "button", "aria-pressed": String((r.s || "n") === s[0]), text: s[1], onclick: function (e) { e.stopPropagation(); apply(w.id, "set", s[0] === "n" ? "" : s[0]); V.list(); } })); });
         more.appendChild(set);
       }
       return el("div", { class: "item" + (pl.on && pl.cur === w.id ? " playing" : ""), "data-id": String(w.id) }, [el("div", { class: "item-main" }, [starBtn(w.id, function () { if (ls.f === "star") V.list(); }),
-        el("button", { class: "item-btn", type: "button", "aria-expanded": String(open), onclick: function () { ls.open[w.id] = !ls.open[w.id]; V.list(); } }, [el("span", { class: "a", text: w.a }), el("span", { class: "m", text: w.m }), el("i", { class: "dot " + (r.s || "n"), "aria-label": { k: "외웠어요", u: "헷갈려요", x: "모르겠어요" }[r.s] || "미학습", style: "margin:0" })])]), more]);
+        el("button", { class: "item-btn", type: "button", "aria-expanded": String(open), onclick: function () { ls.open[w.id] = !ls.open[w.id]; V.list(); } }, [el("span", { class: "a", text: w.a }), el("span", { class: "m" }, [w.m, (DUP[w.id] || []).length ? el("span", { class: "dup-badge", text: "중복" }) : null]), el("i", { class: "dot " + (r.s || "n"), "aria-label": { k: "외웠어요", u: "헷갈려요", x: "모르겠어요" }[r.s] || "미학습", style: "margin:0" })])]), more]);
     }
     if (ls.sort === "abc") { items.slice().sort(function (a, b) { return a.a.toLowerCase().localeCompare(b.a.toLowerCase()); }).forEach(function (w) { root.appendChild(row(w)); }); }
     else { CATS.forEach(function (t, ci) { var g = items.filter(function (w) { return w.c === ci; }); if (!g.length) return; root.appendChild(el("div", { class: "group-h" }, [el("i", { style: "background:" + CAT_COLORS[ci % CAT_COLORS.length] }), t + " · " + g.length])); g.forEach(function (w) { root.appendChild(row(w)); }); }); }
@@ -698,7 +742,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
       [["k", "외웠어요", c.k], ["u", "헷갈려요", c.u], ["x", "모르겠어요", c.x], ["n", "미학습", c.n]].forEach(function (a) { lg.appendChild(el("span", null, [el("i", { class: "dot " + a[0] }), a[1] + " ", el("b", { text: String(a[2]) })])); });
       root.appendChild(el("div", { class: "deck" + (cur ? " cur" : "") }, [
         el("div", { class: "row-between" }, [el("h3", { class: "deck-name", text: d.name }), cur ? el("span", { class: "badge", text: "사용 중" }) : el("span", { class: "pct", text: Math.round(c.k / n * 100) + "%" })]),
-        el("div", { class: "count", text: n + "개 단어 · " + d.cats.length + "개 분야 · " + d.sub + (c.star ? " · ★ " + c.star : "") + (c.wrong ? " · 틀린 것 " + c.wrong : "") }),
+        el("div", { class: "count", text: n + "개 단어 · " + d.cats.length + "개 분야 · " + d.sub + " · 다른 단어장과 겹침 " + d.words.filter(function (x) { return (DUP[x.id] || []).some(function (y) { return DECK_OF[y] !== d; }); }).length + "개" + (c.star ? " · ★ " + c.star : "") + (c.wrong ? " · 틀린 것 " + c.wrong : "") }),
         bar, lg,
         el("div", { class: "deck-actions" }, [
           el("button", { class: "btn primary", type: "button", text: "이 단어장으로 학습", onclick: function () { chooseDeck(d.id, "cards"); } }),
