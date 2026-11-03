@@ -11,6 +11,7 @@ const firebaseConfig = {
   appId: "1:614457339051:web:284fb7fedd8a7ed0c9dbee"
 };
 
+let deleting = false, delOpen = false, delMsg = "", delBusy = false, delStage = "confirm";
 let FA, FS, auth, db, user = null, unsub = null, timer = null, status = "loading", errMsg = "", formOpen = false, busy = false;
 const KN = () => window.KN;
 const STATUS = {
@@ -46,7 +47,7 @@ function h(tag, attrs, kids) {
   (kids || []).forEach((c) => { if (c != null) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
   return e;
 }
-function setStatus(s) { status = s; render(); }
+function setStatus(s) { status = s; render(); renderDel(); }
 function curStatus() { if (user && (status === "syncing" || status === "pending") && !navigator.onLine) return "offline"; return status; }
 
 function render(box) {
@@ -152,7 +153,7 @@ async function flush(manual) {
   }
 }
 function onSave() {
-  if (!user) return;
+  if (!user || deleting) return;
   clearTimeout(timer);
   if (status !== "syncing") { status = "pending"; render(); }
   timer = setTimeout(flush, 1500);
@@ -168,10 +169,12 @@ async function boot() {
     catch (e) { db = F.getFirestore(app); }
   } catch (e) { setStatus("failed"); return; }
   try { await FA.getRedirectResult(auth); } catch (e) { errMsg = authErr(e); }
-  FA.onAuthStateChanged(auth, (u) => {
+  FA.onAuthStateChanged(auth, (u) => attach(u));
+}
+function attach(u) {
     if (unsub) { unsub(); unsub = null; }
     clearTimeout(timer);
-    user = u || null; errMsg = "";
+    user = u || null; errMsg = ""; deleting = false;
     if (!user) { setStatus("out"); return; }
     const S = KN().S;
     // 이 기기에서 다른 계정을 쓰던 기록이면 섞지 않고 새 계정 기록으로 바꿉니다.
@@ -194,11 +197,70 @@ async function boot() {
       if (changed) KN().refresh();
       flush();
     }, (err) => setStatus(err && err.code === "permission-denied" ? "denied" : "error"));
-  });
+}
+
+// ---------- 회원 탈퇴 ----------
+function wipeLocal() { const S = KN().S; S.w = {}; S.d = {}; S.h = []; S.hd = {}; S.owner = null; KN().save(true); KN().refresh(); }
+function renderDel(box) {
+  box = box || document.getElementById("acct-del");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!user) { if (delMsg) box.appendChild(h("p", { class: "foot-note", role: "status", text: delMsg })); return; }
+  const who = user.email || "로그인 계정";
+  if (!delOpen) { box.appendChild(h("button", { class: "foot-link", type: "button", text: "회원 탈퇴 (" + who + ")", onclick: () => { delOpen = true; delMsg = ""; delStage = "confirm"; renderDel(); } })); return; }
+  const panel = h("div", { class: "del-panel", role: "alertdialog", "aria-label": "회원 탈퇴 확인" });
+  panel.appendChild(h("b", { text: "회원 탈퇴 전에 꼭 확인하세요" }));
+  panel.appendChild(h("p", { text: "탈퇴하면 서버에 저장된 진도(별표·외움 상태)와 시험 기록, 로그인 계정(" + who + ")이 영구 삭제되며 되돌릴 수 없어요. 이 기기에 저장된 기록도 함께 지워져요." }));
+  const cancel = h("button", { class: "btn", type: "button", disabled: delBusy, text: "취소", onclick: () => { delOpen = false; delMsg = ""; const wasDel = delStage === "reauth"; delStage = "confirm"; if (wasDel) attach(auth.currentUser || user); renderDel(); } });
+  if (delStage === "confirm") {
+    panel.appendChild(h("p", { text: "계속하려면 아래 칸에 ‘확인했습니다’를 입력하세요." }));
+    const inp = h("input", { class: "search", type: "text", placeholder: "확인했습니다", "aria-label": "탈퇴 확인 문구 입력", autocomplete: "off" });
+    const go = h("button", { class: "btn del-go", type: "button", disabled: true, text: "탈퇴하기", onclick: () => { if (inp.value.trim() === "확인했습니다") doDelete(); } });
+    inp.addEventListener("input", () => { go.disabled = delBusy || inp.value.trim() !== "확인했습니다"; });
+    panel.appendChild(inp);
+    panel.appendChild(h("div", { class: "acct-btns" }, [go, cancel]));
+  } else {
+    panel.appendChild(h("p", { text: "보안을 위해 다시 로그인해야 탈퇴할 수 있어요. 다시 로그인하면 바로 탈퇴가 진행돼요." }));
+    const isPw = (user.providerData || []).some((p) => p.providerId === "password");
+    if (isPw) {
+      const pw = h("input", { class: "search", type: "password", placeholder: "비밀번호", "aria-label": "비밀번호", autocomplete: "current-password" });
+      panel.appendChild(pw);
+      panel.appendChild(h("div", { class: "acct-btns" }, [h("button", { class: "btn del-go", type: "button", disabled: delBusy, text: "다시 로그인 후 탈퇴", onclick: () => reauthPw(pw.value) }), cancel]));
+    } else {
+      panel.appendChild(h("div", { class: "acct-btns" }, [h("button", { class: "btn del-go", type: "button", disabled: delBusy, text: "Google로 다시 로그인 후 탈퇴", onclick: reauthGoogle }), cancel]));
+    }
+  }
+  if (delMsg) panel.appendChild(h("p", { class: "acct-err", role: "alert", text: delMsg }));
+  box.appendChild(panel);
+}
+async function doDelete() {
+  if (!user || delBusy) return;
+  delBusy = true; delMsg = "탈퇴 처리 중…"; renderDel();
+  deleting = true; if (unsub) { unsub(); unsub = null; } clearTimeout(timer);
+  const uid = user.uid;
+  try {
+    await FS.deleteDoc(FS.doc(db, "users", uid));
+    await FA.deleteUser(auth.currentUser || user);
+    delBusy = false; delOpen = false; delStage = "confirm"; delMsg = "탈퇴가 완료됐어요. 서버와 이 기기의 기록을 모두 지웠어요.";
+    wipeLocal();
+  } catch (e) {
+    delBusy = false;
+    if (e && e.code === "auth/requires-recent-login") { delStage = "reauth"; delMsg = ""; }
+    else { delMsg = "탈퇴 중 오류가 났어요. 잠시 후 다시 시도해 주세요. (" + ((e && (e.code || e.message)) || "알 수 없음") + ")"; delStage = "confirm"; attach(auth.currentUser || user); }
+  }
+  render(); renderDel();
+}
+async function reauthGoogle() {
+  try { await FA.reauthenticateWithPopup(auth.currentUser || user, new FA.GoogleAuthProvider()); delStage = "confirm"; await doDelete(); }
+  catch (e) { delMsg = authErr(e) || "다시 로그인하지 못했어요."; renderDel(); }
+}
+async function reauthPw(pw) {
+  try { const cred = FA.EmailAuthProvider.credential((auth.currentUser || user).email, pw || ""); await FA.reauthenticateWithCredential(auth.currentUser || user, cred); delStage = "confirm"; await doDelete(); }
+  catch (e) { delMsg = authErr(e) || "다시 로그인하지 못했어요."; renderDel(); }
 }
 
 window.addEventListener("online", () => { render(); if (user) flush(); });
 window.addEventListener("offline", () => render());
-window.KNSync = { onSave, render };
+window.KNSync = { onSave, render, renderDel };
 render();
 boot();
