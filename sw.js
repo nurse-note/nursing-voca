@@ -1,7 +1,7 @@
 // 간호학 단어장 오프라인 지원
-// 화면(index.html)은 인터넷이 되면 항상 최신본을 받고, 안 되면 저장본을 씁니다.
+// 화면(index.html)과 sync.js는 인터넷이 되면 항상 서버의 최신본을 받고(브라우저 저장본 무시), 안 되면 저장본을 씁니다.
 // 로그인·동기화 통신(Firebase 서버)은 저장하지 않고 그대로 통과시킵니다.
-const CACHE = "kn-voca-v20";
+const CACHE = "kn-voca-v26";
 const SHELL = ["./", "index.html", "sync.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"];
 const CACHE_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com", "www.gstatic.com"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
@@ -16,11 +16,11 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (req.mode === "navigate") {
-    e.respondWith(fetch(req).then((res) => { const cp = res.clone(); caches.open(CACHE).then((c) => c.put("index.html", cp)); return res; }).catch(() => caches.match("index.html")));
+    e.respondWith(fetch(new Request(req.url, { cache: "no-cache", credentials: "same-origin" })).then((res) => { const cp = res.clone(); caches.open(CACHE).then((c) => c.put("index.html", cp)); return res; }).catch(() => caches.match("index.html")));
     return;
   }
   if (url.pathname.endsWith("/sync.js")) {
-    e.respondWith(fetch(req).then((res) => { const cp = res.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); return res; }).catch(() => caches.match(req)));
+    e.respondWith(fetch(req.url, { cache: "no-cache" }).then((res) => { const cp = res.clone(); caches.open(CACHE).then((c) => c.put("sync.js", cp)); return res; }).catch(() => caches.match("sync.js")));
     return;
   }
   e.respondWith(caches.match(req).then((hit) => { const net = fetch(req).then((res) => { const cp = res.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); return res; }).catch(() => hit); return hit || net; }));
