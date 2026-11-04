@@ -130,9 +130,21 @@ function mergeHist(rh) {
   }
   return changed;
 }
-async function flush(manual) {
-  if (!user || !db) return;
+// 쓰기 횟수 보호: 한 번에 하나만 보내고(보내는 중이면 끝난 뒤 한 번 더), 변경은 3초 모아서 보냄
+let inflight = false, again = false;
+const DEBOUNCE = 3000;
+let firstPend = 0; const MAXWAIT = 20000; // 계속 공부 중이어도 20초마다는 올림
+function schedule(ms) {
   clearTimeout(timer);
+  if (!firstPend) firstPend = Date.now();
+  let wait = ms == null ? DEBOUNCE : ms;
+  wait = Math.max(0, Math.min(wait, MAXWAIT - (Date.now() - firstPend)));
+  timer = setTimeout(flush, wait);
+}
+async function flush(manual) {
+  if (!user || !db || deleting) return;
+  clearTimeout(timer);
+  if (inflight) { again = true; return; }
   const S = KN().S; S.d = S.d || {};
   S.hd = S.hd || {};
   const ids = Object.keys(S.d), hids = Object.keys(S.hd);
@@ -142,6 +154,7 @@ async function flush(manual) {
   hids.forEach((id) => { const r = H.find((x) => x.id === id); if (r) hh[id] = r; });
   ids.forEach((id) => { if (S.w[id]) { w[id] = S.w[id]; sent[id] = S.w[id].t || 0; } });
   setStatus("syncing");
+  inflight = true; firstPend = 0;
   try {
     await FS.setDoc(FS.doc(db, "users", user.uid), Object.assign({ updatedAt: FS.serverTimestamp() }, ids.length ? { w } : {}, hids.length ? { h: hh } : {}), { merge: true });
     ids.forEach((id) => { if (!S.w[id] || (S.w[id].t || 0) === sent[id]) delete S.d[id]; });
@@ -150,13 +163,17 @@ async function flush(manual) {
     setStatus(Object.keys(S.d).length || Object.keys(S.hd).length ? "pending" : "synced");
   } catch (e) {
     setStatus(e && e.code === "permission-denied" ? "denied" : "error");
+  } finally {
+    inflight = false;
+    const S2 = KN().S;
+    if (again || Object.keys(S2.d || {}).length || Object.keys(S2.hd || {}).length) { again = false; if (user && !deleting) schedule(); }
   }
 }
 function onSave() {
   if (!user || deleting) return;
   clearTimeout(timer);
   if (status !== "syncing") { status = "pending"; render(); }
-  timer = setTimeout(flush, 1500);
+  schedule();
 }
 
 async function boot() {
@@ -195,7 +212,9 @@ function attach(u) {
       const changed = mergeRemote(remote) | mergeHist(rh);
       KN().save(true);
       if (changed) KN().refresh();
-      flush();
+      const pendingSnap = snap.metadata && snap.metadata.hasPendingWrites;
+      if (!pendingSnap && !inflight && (Object.keys(S.d || {}).length || Object.keys(S.hd || {}).length)) schedule();
+      else if (!pendingSnap && !inflight && status !== "denied") setStatus("synced");
     }, (err) => setStatus(err && err.code === "permission-denied" ? "denied" : "error"));
 }
 
@@ -259,7 +278,10 @@ async function reauthPw(pw) {
   catch (e) { delMsg = authErr(e) || "다시 로그인하지 못했어요."; renderDel(); }
 }
 
-window.addEventListener("online", () => { render(); if (user) flush(); });
+window.addEventListener("online", () => { render(); if (user) schedule(500); });
+// 앱을 닫거나 다른 화면으로 갈 때 남은 기록을 바로 올림
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && user) flush(); });
+window.addEventListener("pagehide", () => { if (user) flush(); });
 window.addEventListener("offline", () => render());
 window.KNSync = { onSave, render, renderDel };
 render();

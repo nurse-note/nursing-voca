@@ -368,7 +368,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
      DUP_REMOVE : 다른 단어인데 중복으로 잘못 표시될 때   예) [[54, 1153]]
      여러 개는 쉼표로 이어 쓰기: [[4, 1031], [36, 1112]] */
   var TOUCH = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches); // 휴대폰·태블릿은 입력칸 자동 포커스 안 함(키보드 자동으로 안 올라옴)
-  var APP_VERSION = "1.13.6", APP_DATE = "2026.11.04";
+  var APP_VERSION = "1.13.7", APP_DATE = "2026.11.04";
   /* ===== 받아쓰기 뜻 채점: 같은 뜻으로 볼 표현 =====
      [기준 표현, 같은 뜻 표현, ...] 형태로 추가하세요.  예) ["좌측", "왼쪽", "왼편"] */
   var SYN = [
@@ -1143,7 +1143,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   show(TABS.indexOf(h) >= 0 ? h : (TABS.indexOf(S.ui.tab) >= 0 ? S.ui.tab : "decks"));
 })();
 </script>
-<script type="module" src="sync.js?v=1.13.6"></script>
+<script type="module" src="sync.js?v=1.13.7"></script>
 <script>
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
 </script>
