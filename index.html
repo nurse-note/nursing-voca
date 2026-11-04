@@ -368,7 +368,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
      DUP_REMOVE : 다른 단어인데 중복으로 잘못 표시될 때   예) [[54, 1153]]
      여러 개는 쉼표로 이어 쓰기: [[4, 1031], [36, 1112]] */
   var TOUCH = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches); // 휴대폰·태블릿은 입력칸 자동 포커스 안 함(키보드 자동으로 안 올라옴)
-  var APP_VERSION = "1.13.4", APP_DATE = "2026.11.03";
+  var APP_VERSION = "1.13.6", APP_DATE = "2026.11.04";
   /* ===== 받아쓰기 뜻 채점: 같은 뜻으로 볼 표현 =====
      [기준 표현, 같은 뜻 표현, ...] 형태로 추가하세요.  예) ["좌측", "왼쪽", "왼편"] */
   var SYN = [
@@ -582,7 +582,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     root.appendChild(el("div", { class: "row-between" }, [el("span", { class: "count", text: (cs.i + 1) + " / " + cs.q.length }), el("span", { style: "display:flex;align-items:center;gap:2px" }, [sayBtn(w.o), starBtn(w.id)])]));
     root.appendChild(el("div", { class: "meter", "aria-hidden": "true" }, [el("i", { style: "width:" + (cs.i / cs.q.length * 100) + "%" })]));
     var fr = S.ui.front, frontMid;
-    if (fr === "a") frontMid = el("div", { class: "big-abbr", text: w.a });
+    if (fr === "a") frontMid = w.na ? el("div", { class: "big-origin", text: w.o }) : el("div", { class: "big-abbr", text: w.a });
     else if (fr === "m") frontMid = el("div", { class: "big-text", text: w.m });
     else frontMid = el("div", { class: "big-origin", text: w.o });
     var front = el("div", { class: "face front" }, [el("div", { class: "head" }, [catTag(w)]), el("div", { class: "mid" }, [frontMid]), el("div", { class: "hint", text: "탭해서 뒤집기" })]);
@@ -798,19 +798,28 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   var LF = [["all", "전체"], ["star", "★ 별표"], ["right", "맞은 것"], ["wrong", "틀린 것"], ["k", "외웠어요"], ["u", "헷갈려요"], ["x", "모르겠어요"], ["n", "미학습"], ["dup", "중복"]];
   var ls = { q: "", f: "all", cat: "-1", sort: "cat", open: {}, confirm: false };
   function listPool() { if (ls.q && ls.q.trim() && ls.cat === "-1") return WORDS.concat(ALLW.filter(function (x) { return DECK_OF[x.id] !== CUR; })); return WORDS; }
+  var CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+  function choseong(s) { var o = ""; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); o += (c >= 0xAC00 && c <= 0xD7A3) ? CHO[Math.floor((c - 0xAC00) / 588)] : s[i]; } return o; }
+  function sKey(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ]/g, ""); }
+  // 검색: 약어·원어·뜻·발음에서 찾음. 'ㅁㅊㄱ'처럼 자음만 쓰면 뜻의 초성으로 찾음
+  function searchHit(w, raw) {
+    var q = sKey(raw); if (!q) return true;
+    if (/^[ㄱ-ㅎ]+$/.test(q)) return choseong(sKey(w.m)).indexOf(q) >= 0 || choseong(sKey(w.p)).indexOf(q) >= 0;
+    return sKey(w.a + "|" + w.o + "|" + w.m + "|" + w.p).indexOf(q) >= 0 || sKey(w.a).indexOf(q) >= 0;
+  }
   function listMatch(w) {
     var r = get(w.id), f = ls.f;
     if (f === "star" && !r.st) return false; if (f === "right" && r.l !== 1) return false; if (f === "wrong" && r.l !== 0) return false;
     if (f === "dup" && !(DUP[w.id] || []).length) return false; if (f === "k" && r.s !== "k") return false; if (f === "u" && r.s !== "u") return false; if (f === "x" && r.s !== "x") return false; if (f === "n" && r.s) return false;
     if (ls.cat !== "-1" && String(w.c) !== ls.cat) return false;
-    if (ls.q) { var q = flat(ls.q), hay = flat(w.a + w.o + w.m + w.p + w.t + DECK_OF[w.id].cats[w.c]); if (hay.indexOf(q) < 0 && (w.a + w.o + w.m + w.t).toLowerCase().indexOf(ls.q.toLowerCase().trim()) < 0) return false; }
+    if (ls.q && ls.q.trim()) { if (!searchHit(w, ls.q)) return false; }
     return true;
   }
   V.list = function () {
     var root = $("#v-list"), keepFocus = document.activeElement && document.activeElement.id === "q", pos = keepFocus ? document.activeElement.selectionStart : 0;
     root.innerHTML = ""; var c = scopeCounts || counts();
-    var si = el("input", { id: "q", class: "search", type: "search", placeholder: "약어·원어·뜻·발음·팁 검색", autocomplete: "off", "aria-label": "검색", value: ls.q });
-    si.addEventListener("input", function () { ls.q = si.value; V.list(); });
+    var si = el("input", { id: "q", class: "search", type: "search", placeholder: "약어·원어·뜻·발음 검색 (초성 검색 가능)", autocomplete: "off", "aria-label": "검색", value: ls.q });
+    si.addEventListener("input", function () { ls.q = si.value; var bd = document.getElementById("list-body"); if (bd) listBody(bd); else V.list(); });
     root.appendChild(si);
     var nmap = { all: N, star: c.star, right: c.right, wrong: c.wrong, k: c.k, u: c.u, x: c.x, n: c.n, dup: WORDS.filter(function (x) { return (DUP[x.id] || []).length; }).length };
     var chips = el("div", { class: "chips", role: "group", "aria-label": "필터" });
@@ -819,6 +828,11 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     var sel = el("select", { class: "sel", "aria-label": "분야", onchange: function (e) { ls.cat = e.target.value; V.list(); } }, [el("option", { value: "-1", text: "모든 분야" })].concat(CATS.map(function (t, i) { return el("option", { value: String(i), text: t, selected: ls.cat === String(i) ? "selected" : null }); })));
     var seg = el("div", { class: "seg", role: "group", "aria-label": "정렬" }); [["cat", "분야별"], ["abc", "알파벳순"]].forEach(function (s) { seg.appendChild(el("button", { type: "button", "aria-pressed": String(ls.sort === s[0]), text: s[1], onclick: function () { ls.sort = s[0]; V.list(); } })); });
     root.appendChild(el("div", { class: "opts" }, [sel, seg]));
+    var body = el("div", { id: "list-body" }); root.appendChild(body); listBody(body);
+    if (keepFocus) { var ni = $("#q"); if (ni) { ni.focus(); try { ni.setSelectionRange(pos, pos); } catch (e) {} } }
+  };
+  function listBody(root) {
+    root.innerHTML = "";
     var items = listPool().filter(listMatch);
     root.appendChild(el("div", { class: "count", style: "margin-bottom:4px", text: (ls.q && ls.q.trim() && ls.cat === "-1") ? "검색 결과 " + items.length + "개 (이 단어장 " + items.filter(function (x) { return DECK_OF[x.id] === CUR; }).length + "개 · 다른 단어장 " + items.filter(function (x) { return DECK_OF[x.id] !== CUR; }).length + "개)" : N + "개 중 " + items.length + "개" }));
     if (TTS) {
@@ -860,8 +874,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     root.appendChild(rz);
     if (!storeOk) root.appendChild(el("p", { class: "warn", text: "이 환경에서는 진도를 저장할 수 없어요. 창을 닫으면 기록이 사라져요." }));
     plUI();
-    if (keepFocus) { var ni = $("#q"); if (ni) { ni.focus(); try { ni.setSelectionRange(pos, pos); } catch (e) {} } }
-  };
+  }
 
     /* ================= 5. DECK LIBRARY ================= */
   function go(tab) { if (location.hash.slice(1) === tab) show(tab); else location.hash = tab; }
@@ -921,7 +934,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
     var pool = shuffle(ids), n = e.n === 0 ? pool.length : Math.min(e.n, pool.length);
     es = { q: pool.slice(0, n).map(function (id) { var t = e.type === "mix" ? (Math.random() < 0.5 ? "mc" : "w") : e.type; return t === "mc" ? Object.assign({ t: "mc" }, makeQ(id)) : { t: "w", id: id }; }), i: 0, picked: -1, state: "ask", val: "", hint: false, note: "", score: 0, wrong: [], hints: [], cfg: e, retry: !!retry };
   }
-  function wordMatch(w, q) { var k = flat(q); if (!k) return true; return flat(w.a + w.o + w.m + w.p).indexOf(k) >= 0 || (w.a + w.o + w.m).toLowerCase().indexOf(q.toLowerCase().trim()) >= 0; }
+  function wordMatch(w, q) { return searchHit(w, q); }
   function examFoot() {
     var f = $("#exfoot"); if (!f) return;
     f.innerHTML = ""; var e = exCfg(), ids = exPool(e), n = e.n === 0 ? ids.length : Math.min(e.n, ids.length);
@@ -1130,7 +1143,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   show(TABS.indexOf(h) >= 0 ? h : (TABS.indexOf(S.ui.tab) >= 0 ? S.ui.tab : "decks"));
 })();
 </script>
-<script type="module" src="sync.js?v=1.13.4"></script>
+<script type="module" src="sync.js?v=1.13.6"></script>
 <script>
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
 </script>
