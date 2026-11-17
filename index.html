@@ -266,6 +266,11 @@ main { padding-block: 16px 104px; }
 .hist-chips { flex-wrap: wrap; overflow: visible; margin-top: 8px; }
 .hist-scope { width: 100%; margin-top: 2px; }
 .hist-row .hl .deck-tag { margin-left: 4px; }
+.list-tools { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 8px; }
+.list-tools .seg button { padding: 6px 12px; min-height: 36px; }
+.list-tools .seg button:disabled { opacity: .45; cursor: default; }
+.pl-s:disabled { opacity: .4; }
+.player.paused .pl-now { color: var(--unsure); font-weight: 600; }
 .mc-note { margin: 0 0 10px; color: var(--unsure); font-weight: 600; overflow-wrap: anywhere; }
 .foot-note { margin: 4px 0 0; text-align: left; font-size: 13px; line-height: 1.5; color: var(--muted); }
 .dict-fields { display: grid; gap: 8px; margin-bottom: 8px; }
@@ -372,7 +377,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
      DUP_REMOVE : 다른 단어인데 중복으로 잘못 표시될 때   예) [[54, 1153]]
      여러 개는 쉼표로 이어 쓰기: [[4, 1031], [36, 1112]] */
   var TOUCH = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches); // 휴대폰·태블릿은 입력칸 자동 포커스 안 함(키보드 자동으로 안 올라옴)
-  var APP_VERSION = "1.15.0", APP_DATE = "2026.11.17";
+  var APP_VERSION = "1.16.0", APP_DATE = "2026.11.17";
   /* ===== 받아쓰기 뜻 채점: 같은 뜻으로 볼 표현 =====
      [기준 표현, 같은 뜻 표현, ...] 형태로 추가하세요.  예) ["좌측", "왼쪽", "왼편"] */
   var SYN = [
@@ -470,7 +475,15 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   var KO = null;
   function pickKo() { try { var vs = speechSynthesis.getVoices() || []; KO = vs.filter(function (v) { return /^ko/i.test(v.lang); })[0] || null; } catch (e) {} }
   if (TTS) { pickKo(); try { speechSynthesis.addEventListener("voiceschanged", pickKo); } catch (e) {} }
-  var pl = { on: false, order: "seq", rate: 0.9, ids: [], i: 0, cur: null, tok: 0, timer: null };
+  var pl = { on: false, paused: false, order: "seq", rate: 0.9, ids: [], i: 0, cur: null, tok: 0, timer: null };
+  /* 재생 중 화면 꺼짐 방지 (Screen Wake Lock, 지원 브라우저에서만) */
+  var wake = { lock: null };
+  function wakeOn() {
+    if (S.ui.plWake === false || !pl.on) return;
+    try { if (!("wakeLock" in navigator) || wake.lock) return; navigator.wakeLock.request("screen").then(function (l) { if (!pl.on || S.ui.plWake === false) { l.release(); return; } wake.lock = l; l.addEventListener("release", function () { if (wake.lock === l) wake.lock = null; }); }).catch(function () {}); } catch (e) {}
+  }
+  function wakeOff() { var l = wake.lock; wake.lock = null; if (l) { try { l.release(); } catch (e) {} } }
+  try { document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && pl.on) wakeOn(); }); } catch (e) {}
   try { if (S.ui.plOrder) pl.order = S.ui.plOrder; if (S.ui.plRate) pl.rate = S.ui.plRate; } catch (e) {}
   function abbrSpeech(a) {
     return a.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ").replace(/[\/,().]/g, " ").split(/\s+/).filter(Boolean).map(function (x) {
@@ -509,20 +522,24 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   function plStart(ids, fromId) {
     if (!TTS || !ids.length) return;
     try { speechSynthesis.cancel(); } catch (e) {}
-    pl.tok++; clearTimeout(pl.timer); pl.on = true;
+    pl.tok++; clearTimeout(pl.timer); pl.on = true; pl.paused = false; wakeOn();
     pl.ids = pl.order === "rand" ? shuffle(ids) : ids.slice();
     pl.i = fromId != null && pl.ids.indexOf(fromId) >= 0 ? pl.ids.indexOf(fromId) : 0;
     plSay(BYID[pl.ids[pl.i]]);
   }
-  function plStop() { pl.on = false; pl.tok++; clearTimeout(pl.timer); try { speechSynthesis.cancel(); } catch (e) {} pl.cur = null; plAutoOpen(null); }
-  function plJump(d) { if (!pl.on) return; pl.tok++; clearTimeout(pl.timer); try { speechSynthesis.cancel(); } catch (e) {} pl.i = (pl.i + d + pl.ids.length) % pl.ids.length; plSay(BYID[pl.ids[pl.i]]); }
+  function plStop() { pl.on = false; pl.paused = false; pl.tok++; clearTimeout(pl.timer); try { speechSynthesis.cancel(); } catch (e) {} wakeOff(); pl.i = 0; pl.cur = null; plAutoOpen(null); }
+  // 일시정지: 읽던 자리(단어)를 기억하고 멈춤. 이어서 읽기는 그 단어의 처음(약어)부터 다시 읽음
+  function plPause() { if (!pl.on) return; pl.on = false; pl.paused = true; pl.tok++; clearTimeout(pl.timer); try { speechSynthesis.cancel(); } catch (e) {} wakeOff(); plUI(); }
+  function plResume() { if (!pl.paused || !pl.ids.length) return; try { speechSynthesis.cancel(); } catch (e) {} pl.tok++; clearTimeout(pl.timer); pl.on = true; pl.paused = false; wakeOn(); plSay(BYID[pl.ids[pl.i]]); }
+  function plJump(d) { if (pl.paused && pl.ids.length) { pl.i = (pl.i + d + pl.ids.length) % pl.ids.length; pl.cur = pl.ids[pl.i]; plAutoOpen(pl.cur); return; } if (!pl.on) return; pl.tok++; clearTimeout(pl.timer); try { speechSynthesis.cancel(); } catch (e) {} pl.i = (pl.i + d + pl.ids.length) % pl.ids.length; plSay(BYID[pl.ids[pl.i]]); }
   function plUI() {
     var now = document.getElementById("pl-now"), btn = document.getElementById("pl-btn"), bar = document.getElementById("player");
-    if (bar) bar.classList.toggle("on", pl.on);
-    if (btn) { btn.textContent = pl.on ? "■ 정지" : "▶ 재생"; btn.setAttribute("aria-pressed", String(pl.on)); }
-    if (now) { var w = pl.cur && BYID[pl.cur]; now.textContent = w ? (pl.i + 1) + "/" + pl.ids.length + " · " + w.a + " · " + w.m : "약어 → 원어 → 뜻 순서로 반복해서 읽어요"; }
+    if (bar) { bar.classList.toggle("on", pl.on); bar.classList.toggle("paused", pl.paused); }
+    if (btn) { btn.textContent = pl.on ? "⏸ 일시정지" : pl.paused ? "▶ 이어서" : "▶ 재생"; btn.setAttribute("aria-label", pl.on ? "일시정지 (멈춘 단어부터 이어서 읽기)" : pl.paused ? "이어서 읽기" : "재생"); }
+    var sb = document.getElementById("pl-stop"); if (sb) sb.disabled = !(pl.on || pl.paused);
+    if (now) { var w = pl.cur && BYID[pl.cur]; now.textContent = w ? (pl.paused ? "일시정지 · " : "") + (pl.i + 1) + "/" + pl.ids.length + " · " + w.a + " · " + w.m : "약어 → 원어 → 뜻 순서로 반복해서 읽어요"; }
     Array.prototype.forEach.call(document.querySelectorAll("#v-list .item.playing"), function (x) { x.classList.remove("playing"); });
-    if (pl.on && pl.cur) {
+    if ((pl.on || pl.paused) && pl.cur) {
       var it = document.querySelector('#v-list .item[data-id="' + pl.cur + '"]');
       if (it) { it.classList.add("playing"); if (S.ui.plFollow !== false && !document.getElementById("v-list").hidden) { try { it.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) { it.scrollIntoView(); } } }
     }
@@ -839,18 +856,25 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   function listBody(root) {
     root.innerHTML = "";
     var items = listPool().filter(listMatch);
-    root.appendChild(el("div", { class: "count", style: "margin-bottom:4px", text: (ls.q && ls.q.trim() && ls.cat === "-1") ? "검색 결과 " + items.length + "개 (이 단어장 " + items.filter(function (x) { return DECK_OF[x.id] === CUR; }).length + "개 · 다른 단어장 " + items.filter(function (x) { return DECK_OF[x.id] !== CUR; }).length + "개)" : N + "개 중 " + items.length + "개" }));
+    var anyOpen = items.some(function (x) { return ls.open[x.id]; }), allOpen = items.length > 0 && items.every(function (x) { return ls.open[x.id]; });
+    root.appendChild(el("div", { class: "list-tools" }, [
+      el("div", { class: "count", text: (ls.q && ls.q.trim() && ls.cat === "-1") ? "검색 결과 " + items.length + "개 (이 단어장 " + items.filter(function (x) { return DECK_OF[x.id] === CUR; }).length + "개 · 다른 단어장 " + items.filter(function (x) { return DECK_OF[x.id] !== CUR; }).length + "개)" : N + "개 중 " + items.length + "개" }),
+      el("div", { class: "seg", role: "group", "aria-label": "단어 한번에 펼치기·접기" }, [
+        el("button", { type: "button", text: "모두 펼치기", disabled: !items.length || allOpen ? "disabled" : null, onclick: function () { items.forEach(function (x) { ls.open[x.id] = true; }); if (pl.autoOpen != null) pl.autoOpen = null; V.list(); } }),
+        el("button", { type: "button", text: "모두 접기", disabled: !anyOpen ? "disabled" : null, onclick: function () { ls.open = {}; pl.autoOpen = null; V.list(); } })])]));
     if (TTS) {
       var listOrder = function () { var it = listPool().filter(listMatch); if (ls.sort === "abc") it = it.slice().sort(function (a, b) { return a.a.toLowerCase().localeCompare(b.a.toLowerCase()); }); return it.map(function (w) { return w.id; }); };
       root.appendChild(el("div", { class: "pl-set" }, [
-        segOf("재생 순서", [["seq", "정방향"], ["rand", "랜덤"]], pl.order, function (v) { pl.order = v; S.ui.plOrder = v; save(); if (pl.on) plStart(listOrder(), pl.cur); V.list(); }),
+        segOf("재생 순서", [["seq", "정방향"], ["rand", "랜덤"]], pl.order, function (v) { pl.order = v; S.ui.plOrder = v; save(); if (pl.on) plStart(listOrder(), pl.cur); else if (pl.paused) { var ni = listOrder(); pl.ids = v === "rand" ? shuffle(ni) : ni; pl.i = Math.max(0, pl.ids.indexOf(pl.cur)); pl.cur = pl.ids[pl.i]; } V.list(); }),
         segOf("속도", [[0.7, "느리게"], [0.9, "보통"], [1.1, "빠르게"]], pl.rate, function (v) { pl.rate = v; S.ui.plRate = v; save(); V.list(); }),
-        el("div", { class: "opts" }, [el("label", null, [el("input", { type: "checkbox", checked: S.ui.plFollow !== false ? "checked" : null, onchange: function (e) { S.ui.plFollow = e.target.checked; save(); } }), "읽는 단어로 화면 따라가기 (단어를 펼쳐 발음·팁 보기)"])]),
-        el("p", { class: "note", style: "margin:0 0 8px", text: "지금 보이는 목록(검색·필터·분야 적용)을 약어 → 원어 → 뜻 순서로 끝없이 반복해요. 단어를 누른 상태에서 재생하면 그 단어부터 시작해요." })]));
+        el("div", { class: "opts" }, [el("label", null, [el("input", { type: "checkbox", checked: S.ui.plFollow !== false ? "checked" : null, onchange: function (e) { S.ui.plFollow = e.target.checked; save(); } }), "읽는 단어로 화면 따라가기 (단어를 펼쳐 발음·팁 보기)"]),
+          el("label", null, [el("input", { type: "checkbox", checked: S.ui.plWake !== false ? "checked" : null, onchange: function (e) { S.ui.plWake = e.target.checked; save(); if (e.target.checked) wakeOn(); else wakeOff(); } }), "재생 중 화면 꺼짐 방지" + (("wakeLock" in navigator) ? "" : " (이 브라우저는 지원 안 함)")])]),
+        el("p", { class: "note", style: "margin:0 0 8px", text: "지금 보이는 목록(검색·필터·분야 적용)을 약어 → 원어 → 뜻 순서로 끝없이 반복해요. 단어를 누른 상태에서 재생하면 그 단어부터 시작해요. ⏸ 일시정지는 멈춘 단어부터 이어서, ⏹ 정지는 처음부터 다시 읽어요." })]));
       root.appendChild(el("div", { class: "player" + (pl.on ? " on" : ""), id: "player" }, [el("div", { class: "player-in" }, [
         el("div", { class: "pl-now", id: "pl-now", "aria-live": "polite" }),
         el("button", { class: "btn pl-s", type: "button", "aria-label": "이전 단어", text: "◀", onclick: function () { plJump(-1); } }),
-        el("button", { class: "btn primary pl-main", id: "pl-btn", type: "button", onclick: function () { if (pl.on) { plStop(); return; } var ids = listOrder(), open = Object.keys(ls.open).filter(function (k) { return ls.open[k]; }).map(Number).filter(function (k) { return ids.indexOf(k) >= 0; }); plStart(ids, open.length ? open[open.length - 1] : null); } }),
+        el("button", { class: "btn primary pl-main", id: "pl-btn", type: "button", onclick: function () { if (pl.on) { plPause(); return; } if (pl.paused) { plResume(); return; } var ids = listOrder(), open = Object.keys(ls.open).filter(function (k) { return ls.open[k]; }).map(Number).filter(function (k) { return ids.indexOf(k) >= 0; }); plStart(ids, open.length ? open[open.length - 1] : null); } }),
+        el("button", { class: "btn pl-s", id: "pl-stop", type: "button", "aria-label": "정지 (처음부터 다시 읽기)", text: "⏹", disabled: !(pl.on || pl.paused), onclick: function () { plStop(); } }),
         el("button", { class: "btn pl-s", type: "button", "aria-label": "다음 단어", text: "▶", onclick: function () { plJump(1); } })])]));
     }
     if (!items.length) root.appendChild(el("div", { class: "empty" }, [el("strong", { text: "조건에 맞는 단어가 없어요" }), el("p", { text: "검색어나 필터를 바꿔 보세요." })]));
@@ -864,7 +888,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
         [["k", "외웠어요"], ["u", "헷갈려요"], ["x", "모르겠어요"], ["n", "미학습"]].forEach(function (s) { set.appendChild(el("button", { class: s[0], type: "button", "aria-pressed": String((r.s || "n") === s[0]), text: s[1], onclick: function (e) { e.stopPropagation(); apply(w.id, "set", s[0] === "n" ? "" : s[0]); V.list(); } })); });
         more.appendChild(set);
       }
-      return el("div", { class: "item" + (pl.on && pl.cur === w.id ? " playing" : ""), "data-id": String(w.id) }, [el("div", { class: "item-main" }, [starBtn(w.id, function () { if (ls.f === "star") V.list(); }),
+      return el("div", { class: "item" + ((pl.on || pl.paused) && pl.cur === w.id ? " playing" : ""), "data-id": String(w.id) }, [el("div", { class: "item-main" }, [starBtn(w.id, function () { if (ls.f === "star") V.list(); }),
         el("button", { class: "item-btn", type: "button", "aria-expanded": String(open), onclick: function () { ls.open[w.id] = !ls.open[w.id]; V.list(); } }, [el("span", { class: "a", text: w.a }), el("span", { class: "m" }, [w.m, DECK_OF[w.id] !== CUR ? el("span", { class: "deck-tag", text: "(" + DECK_OF[w.id].short + ")" }) : null, (DUP[w.id] || []).length ? el("span", { class: "dup-badge", text: "중복" }) : null]), el("i", { class: "dot " + (r.s || "n"), "aria-label": { k: "외웠어요", u: "헷갈려요", x: "모르겠어요" }[r.s] || "미학습", style: "margin:0" })])]), more]);
     }
     if (ls.sort === "abc") { items.slice().sort(function (a, b) { return a.a.toLowerCase().localeCompare(b.a.toLowerCase()); }).forEach(function (w) { root.appendChild(row(w)); }); }
@@ -1150,7 +1174,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   var TABS = ["decks", "cards", "quiz", "write", "list", "exam"];
   function show(tab) {
     if (TABS.indexOf(tab) < 0) tab = "cards";
-    if (tab !== "list" && pl.on) plStop(); S.ui.tab = tab; save();
+    if (tab !== "list" && (pl.on || pl.paused)) plStop(); S.ui.tab = tab; save();
     TABS.forEach(function (t) { $("#v-" + t).hidden = t !== tab; });
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
     V[tab]();
@@ -1173,7 +1197,7 @@ const DATA = {"decks":[{"id":"fund1","name":"기본간호학1 단어장","short"
   show(TABS.indexOf(h) >= 0 ? h : (TABS.indexOf(S.ui.tab) >= 0 ? S.ui.tab : "decks"));
 })();
 </script>
-<script type="module" src="sync.js?v=1.15.0"></script>
+<script type="module" src="sync.js?v=1.16.0"></script>
 <script>
 if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
 </script>
